@@ -1,26 +1,221 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ================================================================== */
+/*  Afromenu Design System — Tailwind v4 theme tokens                  */
+/* ================================================================== */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Charcoal scale (backgrounds & surfaces) */
+  --color-charcoal-950: #0d0d0d;
+  --color-charcoal-900: #1a1a1a;
+  --color-charcoal-800: #2a2a2a;
+  --color-charcoal-700: #3a3a3a;
+
+  /* Gold scale (accents & highlights) */
+  --color-gold-600: #b8922e;
+  --color-gold-500: #d4a843;
+  --color-gold-400: #e6c164;
+  --color-gold-300: #f0d78c;
+
+  /* Neutral text */
+  --color-cream: #f5f0e8;
+  --color-cream-muted: #b8b0a0;
+
+  /* Semantic aliases */
+  --color-background: var(--color-charcoal-950);
+  --color-foreground: var(--color-cream);
+  --color-surface: var(--color-charcoal-900);
+  --color-surface-elevated: var(--color-charcoal-800);
+  --color-accent: var(--color-gold-500);
+  --color-accent-hover: var(--color-gold-400);
+  --color-accent-light: var(--color-gold-300);
+  --color-muted: var(--color-cream-muted);
+  --color-border: var(--color-charcoal-700);
+
+  /* Typography — mapped from next/font/google CSS variables */
+  --font-heading: var(--font-playfair), "Georgia", serif;
+  --font-body: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ================================================================== */
+/*  Base reset & globals                                               */
+/* ================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background-color: var(--color-charcoal-950);
+  color: var(--color-cream);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-charcoal-950);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-charcoal-700);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gold-600);
+}
+
+/* ================================================================== */
+/*  3D Card System — Interactive mouse-tracking                        */
+/* ================================================================== */
+
+/* Perspective stage wraps the grid and establishes the 3D space */
+.perspective-stage {
+  perspective: 1000px;
+  perspective-origin: center center;
+}
+
+/* Wrapper provides the 3D transform-style inheritance */
+.card-3d-wrapper {
+  transform-style: preserve-3d;
+}
+
+/* The actual interactive 3D card */
+.card-3d-interactive {
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1),
+              box-shadow 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  will-change: transform;
+  transform: perspective(800px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1);
+}
+
+/* Gold glow overlay — positioned absolutely over the card */
+.card-glow-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: inherit;
+  mix-blend-mode: screen;
+}
+
+/* Elevated shadow on hover for depth */
+@media (hover: hover) and (pointer: fine) {
+  .card-3d-wrapper:hover .card-3d-interactive {
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.5),
+      0 0 30px rgba(212, 168, 67, 0.08);
+  }
+}
+
+/* Fallback static 3D for old .card-3d class (RestaurantHeader etc.) */
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.35s ease;
+  will-change: transform;
+}
+
+.perspective-container {
+  perspective: 1200px;
+}
+
+/* ================================================================== */
+/*  Menu image container (CLS prevention)                              */
+/*  Uses fixed aspect-ratio so space is reserved before images load.   */
+/*  Wraps <img>, and later can wrap <video> / <picture> without        */
+/*  rewriting layout code.                                             */
+/* ================================================================== */
+
+.menu-media-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 8px 8px 0 0;
+  background-color: var(--color-charcoal-800);
+}
+
+.menu-media-container img,
+.menu-media-container video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Placeholder icon when no image is available */
+.menu-media-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-charcoal-700);
+  background: linear-gradient(
+    145deg,
+    var(--color-charcoal-800) 0%,
+    var(--color-charcoal-900) 100%
+  );
+}
+
+/* ================================================================== */
+/*  Gold shimmer skeleton (loading states)                             */
+/* ================================================================== */
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-charcoal-800) 0%,
+    var(--color-charcoal-700) 40%,
+    var(--color-charcoal-800) 80%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.8s infinite linear;
+  border-radius: 6px;
+}
+
+/* ================================================================== */
+/*  Utility: horizontal scroll strip (category nav)                    */
+/* ================================================================== */
+
+.scroll-strip {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+.scroll-strip::-webkit-scrollbar {
+  display: none;
+}
+.scroll-strip > * {
+  scroll-snap-align: start;
+  flex-shrink: 0;
 }
