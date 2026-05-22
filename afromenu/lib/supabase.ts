@@ -64,3 +64,32 @@ export interface Item {
   tags: string[];
   created_at: string;
 }
+
+/* ------------------------------------------------------------------ */
+/*  Retro-compatibility types for legacy [restaurant_id] pages        */
+/* ------------------------------------------------------------------ */
+
+export interface Restaurant {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  description: string | null;
+  address: string | null;
+  phone: string | null;
+  wifi_password: string | null;
+  currency: string;
+  slug: string;
+}
+
+export interface MenuItem {
+  id: string;
+  category_id: number;
+  name: string;
+  description: string | null;
+  price: number;
+  old_price?: number;
+  image_url: string | null;
+  is_hidden: boolean;
+  sort_order: number;
+}
+
