@@ -76,7 +76,7 @@ export default async function RestaurantPage({ params }: PageProps) {
   }
 
   /* 4. Group items by category */
-  const itemsByCategory = new Map<number, MenuItem[]>();
+  const itemsByCategory = new Map<string, MenuItem[]>();
   for (const item of typedItems) {
     const existing = itemsByCategory.get(item.category_id) ?? [];
     existing.push(item);

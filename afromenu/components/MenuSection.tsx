@@ -7,7 +7,7 @@ import type { Item } from "@/lib/supabase";
 interface MenuSectionProps {
   categoryId: string;
   categoryName: string;
-  items: Item[];
+  items: any[];
   currency: string;
 }
 
@@ -17,7 +17,9 @@ export default function MenuSection({
   items,
   currency,
 }: MenuSectionProps) {
-  const visibleItems = items.filter((item) => item.is_available);
+  const visibleItems = items.filter(
+    (item) => item.is_available !== false && item.is_hidden !== true
+  );
 
   return (
     <section
