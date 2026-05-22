@@ -1,96 +1,172 @@
 -- =============================================================================
--- Afromenu — Database Schema
--- Run this script in the Supabase SQL Editor to create all tables.
+-- Afromenu — Database Schema for QR Code Digital Menu SaaS (Supabase)
 -- =============================================================================
 
--- 1. Restaurants
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Drop existing trigger/function/tables if needed for overwrite
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
+DROP TABLE IF EXISTS public.items CASCADE;
+DROP TABLE IF EXISTS public.categories CASCADE;
+DROP TABLE IF EXISTS public.establishments CASCADE;
+DROP TABLE IF EXISTS public.users CASCADE;
+
+-- 1. Public Users Table (Extends Supabase Auth)
 -- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS restaurants (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name       TEXT NOT NULL,
-  logo_url   TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE TABLE public.users (
+  id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  name        VARCHAR(100) NOT NULL,
+  email       VARCHAR(255) UNIQUE NOT NULL,
+  created_at  TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-COMMENT ON TABLE restaurants IS 'Each row represents a single restaurant on the platform.';
+COMMENT ON TABLE public.users IS 'Extends authentication table auth.users for application-specific attributes.';
 
--- 2. Categories
+-- 2. Establishments Table
 -- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS categories (
-  id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  restaurant_id UUID NOT NULL REFERENCES restaurants (id) ON DELETE CASCADE,
-  name          TEXT NOT NULL,
-  display_order INT  NOT NULL DEFAULT 0,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE TABLE public.establishments (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  name            VARCHAR(200) NOT NULL,
+  slug            VARCHAR(100) UNIQUE NOT NULL,
+  currency        VARCHAR(50) NOT NULL DEFAULT 'USD',
+  currency_symbol VARCHAR(10) NOT NULL DEFAULT '$',
+  language        VARCHAR(50) NOT NULL DEFAULT 'English',
+  theme           VARCHAR(10) NOT NULL DEFAULT 'light',
+  brand_color     VARCHAR(7) NOT NULL DEFAULT '#f7906c',
+  logo_url        TEXT,
+  background_url  TEXT,
+  wifi_password   VARCHAR(100),
+  phone           VARCHAR(30),
+  is_active       BOOLEAN DEFAULT true NOT NULL,
+  paid_until      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT (now() + INTERVAL '30 days'),
+  created_at      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-COMMENT ON TABLE categories IS 'Menu categories belonging to a restaurant, ordered by display_order.';
+CREATE INDEX idx_establishments_user_id ON public.establishments(user_id);
+CREATE INDEX idx_establishments_slug ON public.establishments(slug);
 
-CREATE INDEX IF NOT EXISTS idx_categories_restaurant_id
-  ON categories (restaurant_id);
+COMMENT ON TABLE public.establishments IS 'Each row represents a single restaurant or cafe owned by a user.';
 
--- 3. Menu Items
+-- 3. Categories Table
 -- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS menu_items (
-  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  category_id  BIGINT NOT NULL REFERENCES categories (id) ON DELETE CASCADE,
-  name         TEXT NOT NULL,
-  description  TEXT,
-  price        NUMERIC(10, 2) NOT NULL,
-  image_url    TEXT,
-  is_available BOOLEAN NOT NULL DEFAULT true,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE TABLE public.categories (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  establishment_id  UUID NOT NULL REFERENCES public.establishments(id) ON DELETE CASCADE,
+  name              VARCHAR(200) NOT NULL,
+  image_url         TEXT,
+  sort_order        INTEGER NOT NULL DEFAULT 0,
+  is_visible        BOOLEAN DEFAULT true NOT NULL,
+  created_at        TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-COMMENT ON TABLE menu_items IS 'Individual dishes / drinks within a category.';
+CREATE INDEX idx_categories_establishment_id ON public.categories(establishment_id);
 
-CREATE INDEX IF NOT EXISTS idx_menu_items_category_id
-  ON menu_items (category_id);
+COMMENT ON TABLE public.categories IS 'Menu categories belonging to a specific establishment, sorted by sort_order.';
+
+-- 4. Items Table
+-- -----------------------------------------------------------------------------
+CREATE TABLE public.items (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  category_id     UUID NOT NULL REFERENCES public.categories(id) ON DELETE CASCADE,
+  name            VARCHAR(200) NOT NULL,
+  description     TEXT,
+  price           DECIMAL(10,2) NOT NULL,
+  image_url       TEXT,
+  is_available    BOOLEAN DEFAULT true NOT NULL,
+  sort_order      INTEGER NOT NULL DEFAULT 0,
+  tags            VARCHAR[] DEFAULT '{}'::VARCHAR[] NOT NULL,
+  created_at      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX idx_items_category_id ON public.items(category_id);
+
+COMMENT ON TABLE public.items IS 'Individual dishes or items under a menu category.';
+
 
 -- =============================================================================
--- Row Level Security — Public Read-Only
+-- Automation: Auto-populate public.users from auth.users on SignUp
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (id, name, email)
+  VALUES (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'name', 'Owner'),
+    new.email
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+
+-- =============================================================================
+-- Row Level Security (RLS) Policies
 -- =============================================================================
 
 -- Enable RLS on all tables
-ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
-ALTER TABLE categories  ENABLE ROW LEVEL SECURITY;
-ALTER TABLE menu_items  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.establishments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.items ENABLE ROW LEVEL SECURITY;
 
--- Allow anonymous (public) SELECT on every table
-CREATE POLICY "Public read access on restaurants"
-  ON restaurants FOR SELECT
-  TO anon
-  USING (true);
+-- 1. Users Table Policies
+-- Read: Allowed for anyone (e.g. to display owner's name in headers)
+CREATE POLICY "Allow public read on users" ON public.users
+  FOR SELECT USING (true);
 
-CREATE POLICY "Public read access on categories"
-  ON categories FOR SELECT
-  TO anon
-  USING (true);
+-- Update: Allowed only for the owning user
+CREATE POLICY "Allow owner update on user" ON public.users
+  FOR UPDATE USING (auth.uid() = id);
 
-CREATE POLICY "Public read access on menu_items"
-  ON menu_items FOR SELECT
-  TO anon
-  USING (true);
+-- 2. Establishments Table Policies
+-- Read: Allowed for anyone (so customers can view the digital menu)
+CREATE POLICY "Allow public read on establishments" ON public.establishments
+  FOR SELECT USING (true);
 
--- =============================================================================
--- Optional: Seed data for testing (uncomment to use)
--- =============================================================================
+-- Insert/Update/Delete: Allowed only for the owner
+CREATE POLICY "Allow owner insert on establishments" ON public.establishments
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-/*
-INSERT INTO restaurants (id, name, logo_url) VALUES
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Mama Nkechi''s Kitchen', NULL);
+CREATE POLICY "Allow owner update on establishments" ON public.establishments
+  FOR UPDATE USING (auth.uid() = user_id);
 
-INSERT INTO categories (restaurant_id, name, display_order) VALUES
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Starters',  1),
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Mains',     2),
-  ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Drinks',    3);
+CREATE POLICY "Allow owner delete on establishments" ON public.establishments
+  FOR DELETE USING (auth.uid() = user_id);
 
-INSERT INTO menu_items (category_id, name, description, price, image_url, is_available) VALUES
-  (1, 'Suya Skewers',       'Spiced beef skewers grilled over open flame.',          8.50,  NULL, true),
-  (1, 'Puff Puff',          'Golden fried dough balls dusted with powdered sugar.',  4.00,  NULL, true),
-  (2, 'Jollof Rice & Chicken', 'Smoky party jollof with grilled chicken thigh.',    14.99, NULL, true),
-  (2, 'Egusi Soup & Pounded Yam', 'Rich melon seed soup with tender beef.',         16.50, NULL, true),
-  (2, 'Pepper Soup',        'Catfish pepper soup with aromatic spices.',             12.00, NULL, false),
-  (3, 'Chapman',            'Classic Nigerian cocktail with Fanta, Sprite & bitters.', 6.00, NULL, true),
-  (3, 'Zobo',               'Chilled hibiscus flower drink with ginger.',            4.50, NULL, true);
-*/
+-- 3. Categories Table Policies
+-- Read: Allowed for anyone
+CREATE POLICY "Allow public read on categories" ON public.categories
+  FOR SELECT USING (true);
+
+-- Insert/Update/Delete: Allowed only if the user owns the parent establishment
+CREATE POLICY "Allow owner write on categories" ON public.categories
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.establishments e
+      WHERE e.id = categories.establishment_id AND e.user_id = auth.uid()
+    )
+  );
+
+-- 4. Items Table Policies
+-- Read: Allowed for anyone
+CREATE POLICY "Allow public read on items" ON public.items
+  FOR SELECT USING (true);
+
+-- Insert/Update/Delete: Allowed only if the user owns the parent category's establishment
+CREATE POLICY "Allow owner write on items" ON public.items
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.categories c
+      JOIN public.establishments e ON c.establishment_id = e.id
+      WHERE c.id = items.category_id AND e.user_id = auth.uid()
+    )
+  );

@@ -1,0 +1,172 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { Menu, X, Utensils } from "lucide-react";
+
+export default function Navbar() {
+  const { user, signOut } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <nav
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-white/80 backdrop-blur-md border-b border-[#eeeeee] py-3 shadow-sm"
+          : "bg-transparent py-5"
+      }`}
+    >
+      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2 group">
+          <div className="w-10 h-10 rounded-xl bg-[#f7906c] flex items-center justify-center text-white font-bold transition-transform duration-300 group-hover:scale-105">
+            <Utensils className="w-5 h-5" />
+          </div>
+          <span className="font-heading font-extrabold text-2xl tracking-tight text-[#2d2d2d]">
+            Menu<span className="text-[#f7906c]">QR</span>
+          </span>
+        </Link>
+
+        {/* Desktop Links */}
+        <div className="hidden md:flex items-center gap-8">
+          <Link
+            href="/catalog"
+            className="text-sm font-semibold text-[#888888] hover:text-[#f7906c] transition-colors"
+          >
+            Menu Examples
+          </Link>
+          <a
+            href="#"
+            onClick={(e) => e.preventDefault()}
+            className="text-sm font-semibold text-[#888888] hover:text-[#f7906c] transition-colors cursor-not-allowed"
+          >
+            Blog (Coming Soon)
+          </a>
+          <Link
+            href="/pricing"
+            className="text-sm font-semibold text-[#888888] hover:text-[#f7906c] transition-colors"
+          >
+            Pricing
+          </Link>
+        </div>
+
+        {/* Desktop Actions */}
+        <div className="hidden md:flex items-center gap-4">
+          {user ? (
+            <>
+              <Link
+                href="/onboarding"
+                className="text-sm font-bold text-[#2d2d2d] hover:text-[#f7906c] transition-colors"
+              >
+                Onboarding
+              </Link>
+              <button
+                onClick={signOut}
+                className="text-sm font-bold text-[#2d2d2d] hover:text-red-500 transition-colors"
+              >
+                Log Out
+              </button>
+              <Link
+                href="/onboarding"
+                className="px-6 py-2.5 rounded-[50px] bg-[#f7906c] hover:bg-[#e8754f] text-white font-bold text-sm transition-all shadow-sm hover:shadow-md"
+              >
+                Dashboard
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="text-sm font-bold text-[#2d2d2d] hover:text-[#f7906c] transition-colors"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/sign-up"
+                className="px-6 py-2.5 rounded-[50px] bg-[#f7906c] hover:bg-[#e8754f] text-white font-bold text-sm transition-all shadow-sm hover:shadow-md"
+              >
+                Create menu
+              </Link>
+            </>
+          )}
+        </div>
+
+        {/* Mobile Toggle */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="md:hidden text-[#2d2d2d] p-1 focus:outline-none"
+        >
+          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
+
+      {/* Mobile Drawer */}
+      {isOpen && (
+        <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-[#eeeeee] py-6 px-6 flex flex-col gap-4 shadow-lg animate-slide-up">
+          <Link
+            href="/catalog"
+            onClick={() => setIsOpen(false)}
+            className="text-base font-semibold text-[#888888] hover:text-[#f7906c] py-2"
+          >
+            Menu Examples
+          </Link>
+          <Link
+            href="/pricing"
+            onClick={() => setIsOpen(false)}
+            className="text-base font-semibold text-[#888888] hover:text-[#f7906c] py-2"
+          >
+            Pricing
+          </Link>
+          <hr className="border-[#eeeeee]" />
+          {user ? (
+            <>
+              <Link
+                href="/onboarding"
+                onClick={() => setIsOpen(false)}
+                className="text-base font-bold text-[#2d2d2d] hover:text-[#f7906c] py-2"
+              >
+                Dashboard
+              </Link>
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  signOut();
+                }}
+                className="text-left text-base font-bold text-red-500 py-2"
+              >
+                Log Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                onClick={() => setIsOpen(false)}
+                className="text-base font-bold text-[#2d2d2d] hover:text-[#f7906c] py-2"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/sign-up"
+                onClick={() => setIsOpen(false)}
+                className="w-full text-center py-3 rounded-[50px] bg-[#f7906c] hover:bg-[#e8754f] text-white font-bold transition-all shadow-sm"
+              >
+                Create menu
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+    </nav>
+  );
+}
