@@ -9,11 +9,11 @@ export default function Footer() {
         {/* Brand */}
         <div className="md:col-span-2">
           <Link href="/" className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-[#f7906c] flex items-center justify-center text-white font-bold">
+            <div className="w-8 h-8 rounded-lg bg-[#1b3151] flex items-center justify-center text-[#f2bd11] font-bold">
               <Utensils className="w-4 h-4" />
             </div>
-            <span className="font-heading font-extrabold text-xl tracking-tight text-[#2d2d2d]">
-              Menu<span className="text-[#f7906c]">QR</span>
+            <span className="font-heading font-extrabold text-xl tracking-tight text-[#1b3151]">
+              Afro<span className="text-[#f2bd11]">menu</span>
             </span>
           </Link>
           <p className="text-[#888888] text-sm max-w-sm leading-relaxed mb-6">
@@ -23,17 +23,17 @@ export default function Footer() {
 
         {/* Links: Product */}
         <div>
-          <h4 className="font-heading font-bold text-[#2d2d2d] text-sm mb-4 tracking-wide uppercase">
+          <h4 className="font-heading font-bold text-[#1b3151] text-sm mb-4 tracking-wide uppercase">
             Product
           </h4>
           <ul className="flex flex-col gap-3">
             <li>
-              <Link href="/pricing" className="text-sm text-[#888888] hover:text-[#f7906c] transition-colors">
+              <Link href="/pricing" className="text-sm text-[#888888] hover:text-[#f2bd11] transition-colors">
                 Pricing
               </Link>
             </li>
             <li>
-              <Link href="/catalog" className="text-sm text-[#888888] hover:text-[#f7906c] transition-colors">
+              <Link href="/catalog" className="text-sm text-[#888888] hover:text-[#f2bd11] transition-colors">
                 Menu Examples
               </Link>
             </li>
@@ -47,22 +47,22 @@ export default function Footer() {
 
         {/* Links: Company */}
         <div>
-          <h4 className="font-heading font-bold text-[#2d2d2d] text-sm mb-4 tracking-wide uppercase">
+          <h4 className="font-heading font-bold text-[#1b3151] text-sm mb-4 tracking-wide uppercase">
             Legal & Support
           </h4>
           <ul className="flex flex-col gap-3">
             <li>
-              <span className="text-sm text-[#888888] hover:text-[#f7906c] cursor-pointer">
+              <span className="text-sm text-[#888888] hover:text-[#f2bd11] cursor-pointer">
                 Terms of Service
               </span>
             </li>
             <li>
-              <span className="text-sm text-[#888888] hover:text-[#f7906c] cursor-pointer">
+              <span className="text-sm text-[#888888] hover:text-[#f2bd11] cursor-pointer">
                 Privacy Policy
               </span>
             </li>
             <li>
-              <span className="text-sm text-[#888888] hover:text-[#f7906c] cursor-pointer">
+              <span className="text-sm text-[#888888] hover:text-[#f2bd11] cursor-pointer">
                 Contact Support
               </span>
             </li>
@@ -72,7 +72,7 @@ export default function Footer() {
 
       <div className="max-w-7xl mx-auto pt-8 border-t border-[#eeeeee] flex flex-col md:flex-row items-center justify-between gap-4">
         <p className="text-xs text-[#888888]">
-          &copy; {new Date().getFullYear()} <span className="font-semibold text-[#2d2d2d]">MenuQR</span>. All rights reserved.
+          &copy; {new Date().getFullYear()} <span className="font-semibold text-[#1b3151]">Afromenu</span>. All rights reserved.
         </p>
         <p className="text-xs text-[#888888]">
           Made with ❤️ for restaurants in Somalia, East Africa, & Middle East.

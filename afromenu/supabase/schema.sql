@@ -34,8 +34,8 @@ CREATE TABLE public.establishments (
   currency        VARCHAR(50) NOT NULL DEFAULT 'USD',
   currency_symbol VARCHAR(10) NOT NULL DEFAULT '$',
   language        VARCHAR(50) NOT NULL DEFAULT 'English',
-  theme           VARCHAR(10) NOT NULL DEFAULT 'light',
-  brand_color     VARCHAR(7) NOT NULL DEFAULT '#f7906c',
+  template_style  VARCHAR(50) NOT NULL DEFAULT 'minimalist',
+  brand_color     VARCHAR(7) NOT NULL DEFAULT '#f2bd11',
   logo_url        TEXT,
   background_url  TEXT,
   wifi_password   VARCHAR(100),
@@ -59,6 +59,7 @@ CREATE TABLE public.categories (
   image_url         TEXT,
   sort_order        INTEGER NOT NULL DEFAULT 0,
   is_visible        BOOLEAN DEFAULT true NOT NULL,
+  deleted_at        TIMESTAMP WITH TIME ZONE,
   created_at        TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -75,9 +76,11 @@ CREATE TABLE public.items (
   description     TEXT,
   price           DECIMAL(10,2) NOT NULL,
   image_url       TEXT,
+  model_3d_url    TEXT,
   is_available    BOOLEAN DEFAULT true NOT NULL,
   sort_order      INTEGER NOT NULL DEFAULT 0,
   tags            VARCHAR[] DEFAULT '{}'::VARCHAR[] NOT NULL,
+  deleted_at      TIMESTAMP WITH TIME ZONE,
   created_at      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

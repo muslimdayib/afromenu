@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { X, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
+import { resizeImage } from "@/lib/image";
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface AddItemModalProps {
     description: string | null;
     price: number;
     image_url: string | null;
+    model_3d_url: string | null;
     is_available: boolean;
     tags: string[];
     sort_order: number;
@@ -55,9 +57,11 @@ export default function AddItemModal({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [model3dUrl, setModel3dUrl] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [isAvailable, setIsAvailable] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -67,6 +71,7 @@ export default function AddItemModal({
       setPrice(itemToEdit.price.toString());
       setImageUrl(itemToEdit.image_url || "");
       setPreviewUrl(itemToEdit.image_url);
+      setModel3dUrl(itemToEdit.model_3d_url || "");
       setTags(itemToEdit.tags || []);
       setIsAvailable(itemToEdit.is_available);
     } else {
@@ -76,6 +81,7 @@ export default function AddItemModal({
       setImageUrl("");
       setImageFile(null);
       setPreviewUrl(null);
+      setModel3dUrl("");
       setTags([]);
       setIsAvailable(true);
     }
@@ -107,6 +113,33 @@ export default function AddItemModal({
     }
   };
 
+  const handleAiGenerate = async () => {
+    if (!name.trim()) {
+      setError("Please enter the Item Name first before auto-generating a description.");
+      return;
+    }
+    setAiLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/ai/generate-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemName: name }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      if (data.description) {
+        setDescription(data.description);
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to generate AI description.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -125,7 +158,14 @@ export default function AddItemModal({
 
     try {
       if (imageFile) {
-        const fileExt = imageFile.name.split(".").pop();
+        let fileToUpload: File = imageFile;
+        try {
+          fileToUpload = await resizeImage(imageFile, 800);
+        } catch (resizeErr) {
+          console.warn("Image resizing failed, uploading original:", resizeErr);
+        }
+
+        const fileExt = fileToUpload.name.split(".").pop();
         const fileName = `${categoryId}/${Date.now()}-${Math.random()
           .toString(36)
           .substring(2)}.${fileExt}`;
@@ -134,7 +174,7 @@ export default function AddItemModal({
         // Attempt Supabase storage upload
         const { error: uploadError } = await supabase.storage
           .from("menu-images")
-          .upload(filePath, imageFile, {
+          .upload(filePath, fileToUpload, {
             cacheControl: "3600",
             upsert: true,
           });
@@ -159,6 +199,7 @@ export default function AddItemModal({
             description: description || null,
             price: parseFloat(price),
             image_url: finalImageUrl || null,
+            model_3d_url: model3dUrl.trim() || null,
             is_available: isAvailable,
             tags,
           })
@@ -173,6 +214,7 @@ export default function AddItemModal({
           description: description || null,
           price: parseFloat(price),
           image_url: finalImageUrl || null,
+          model_3d_url: model3dUrl.trim() || null,
           is_available: isAvailable,
           tags,
           sort_order: nextSortOrder,
@@ -229,7 +271,7 @@ export default function AddItemModal({
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Double Cheeseburger"
                 required
-                className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f7906c] focus:outline-none text-sm text-[#2d2d2d] bg-[#fdf6f2]/50 placeholder:text-gray-400 font-bold"
+                className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f2bd11] focus:outline-none text-sm text-[#2d2d2d] bg-[#f8f9fa] placeholder:text-gray-400 font-bold"
               />
             </div>
             <div>
@@ -244,22 +286,39 @@ export default function AddItemModal({
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="0.00"
                 required
-                className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f7906c] focus:outline-none text-sm text-[#2d2d2d] bg-[#fdf6f2]/50 placeholder:text-gray-400 font-bold"
+                className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f2bd11] focus:outline-none text-sm text-[#2d2d2d] bg-[#f8f9fa] placeholder:text-gray-400 font-bold"
               />
             </div>
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2">
-              Description
-            </label>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider">
+                Description
+              </label>
+              <button
+                type="button"
+                onClick={handleAiGenerate}
+                disabled={aiLoading}
+                className="text-[11px] font-extrabold text-[#1b3151] bg-[#f2bd11] hover:bg-[#e0ad0f] disabled:bg-gray-200 disabled:text-gray-400 px-2 py-1 rounded-lg transition-all flex items-center gap-1 shadow-sm cursor-pointer"
+              >
+                {aiLoading ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <span>✨ Auto-Generate</span>
+                )}
+              </button>
+            </div>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="List ingredients, size details, or general details..."
+              placeholder="List ingredients, size details, or auto-generate with macros/allergens..."
               rows={3}
-              className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f7906c] focus:outline-none text-sm text-[#2d2d2d] bg-[#fdf6f2]/50 placeholder:text-gray-400 resize-none"
+              className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f2bd11] focus:outline-none text-sm text-[#2d2d2d] bg-[#f8f9fa] placeholder:text-gray-400 resize-none"
             />
           </div>
 
@@ -278,7 +337,7 @@ export default function AddItemModal({
                     onClick={() => handleTagToggle(tag.value)}
                     className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${
                       isSelected
-                        ? "bg-[#f7906c] border-[#f7906c] text-white shadow-sm"
+                        ? "bg-[#f2bd11] border-[#f2bd11] text-[#1b3151] shadow-sm"
                         : "bg-white border-[#eeeeee] text-[#888888] hover:text-[#2d2d2d]"
                     }`}
                   >
@@ -297,14 +356,14 @@ export default function AddItemModal({
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Custom Upload */}
-              <div className="relative border-2 border-dashed border-[#eeeeee] hover:border-[#f7906c]/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors h-[120px] bg-[#fdf6f2]/30">
+              <div className="relative border-2 border-dashed border-[#eeeeee] hover:border-[#f2bd11]/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors h-[120px] bg-[#f8f9fa]">
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
                   className="absolute inset-0 opacity-0 cursor-pointer"
                 />
-                <Upload className="w-6 h-6 text-[#f7906c] mb-2" />
+                <Upload className="w-6 h-6 text-[#1b3151] mb-2" />
                 <span className="text-xs font-bold text-[#2d2d2d]">Upload Custom Photo</span>
                 <span className="text-[10px] text-[#888888] mt-1">PNG, JPG up to 5MB</span>
               </div>
@@ -346,7 +405,7 @@ export default function AddItemModal({
                     key={idx}
                     type="button"
                     onClick={() => selectPreset(p)}
-                    className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f7906c] transition-all"
+                    className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f2bd11] transition-all"
                   >
                     <img src={p} alt="preset" className="w-full h-full object-cover" />
                   </button>
@@ -355,8 +414,25 @@ export default function AddItemModal({
             </div>
           </div>
 
+          {/* 3D Model Link */}
+          <div>
+            <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2">
+              3D Model URL (.glb)
+            </label>
+            <input
+              type="text"
+              value={model3dUrl}
+              onChange={(e) => setModel3dUrl(e.target.value)}
+              placeholder="https://example.com/models/food.glb"
+              className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f2bd11] focus:outline-none text-sm text-[#2d2d2d] bg-[#f8f9fa] placeholder:text-gray-400 font-bold"
+            />
+            <span className="text-[10px] text-gray-400 mt-1 block">
+              Supports high-end interactive 3D visualizers using Google's Model Viewer
+            </span>
+          </div>
+
           {/* Available Toggle */}
-          <div className="flex items-center justify-between p-3 rounded-2xl bg-[#fdf6f2]/50 border border-[#eeeeee]">
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-[#f8f9fa] border border-[#eeeeee]">
             <div>
               <span className="block text-sm font-bold text-[#2d2d2d]">Available on Menu</span>
               <span className="text-[10px] text-[#888888]">Turn off to hide from customers instantly</span>
@@ -365,7 +441,7 @@ export default function AddItemModal({
               type="button"
               onClick={() => setIsAvailable(!isAvailable)}
               className={`w-12 h-7 rounded-full transition-all relative ${
-                isAvailable ? "bg-[#f7906c]" : "bg-gray-300"
+                isAvailable ? "bg-[#f2bd11]" : "bg-gray-300"
               }`}
             >
               <div
@@ -388,7 +464,7 @@ export default function AddItemModal({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 bg-[#f7906c] hover:bg-[#e8754f] disabled:bg-gray-300 text-white font-bold rounded-[50px] text-sm transition-all shadow-md flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-[#f2bd11] hover:bg-[#e0ad0f] disabled:bg-gray-300 text-[#1b3151] font-extrabold rounded-[50px] text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
               {loading ? (
                 <>

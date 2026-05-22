@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { X, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
+import { resizeImage } from "@/lib/image";
 
 interface AddCategoryModalProps {
   isOpen: boolean;
@@ -81,9 +82,16 @@ export default function AddCategoryModal({
     let finalImageUrl = imageUrl;
 
     try {
-      // Robust upload logic
+      // Robust upload logic with client-side compression
       if (imageFile) {
-        const fileExt = imageFile.name.split(".").pop();
+        let fileToUpload: File = imageFile;
+        try {
+          fileToUpload = await resizeImage(imageFile, 800);
+        } catch (resizeErr) {
+          console.warn("Image resizing failed, uploading original:", resizeErr);
+        }
+
+        const fileExt = fileToUpload.name.split(".").pop();
         const fileName = `${establishmentId}/${Date.now()}-${Math.random()
           .toString(36)
           .substring(2)}.${fileExt}`;
@@ -92,7 +100,7 @@ export default function AddCategoryModal({
         // Attempt Supabase storage upload
         const { data, error: uploadError } = await supabase.storage
           .from("menu-images")
-          .upload(filePath, imageFile, {
+          .upload(filePath, fileToUpload, {
             cacheControl: "3600",
             upsert: true,
           });
@@ -186,7 +194,7 @@ export default function AddCategoryModal({
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. BURGERS (11 AM - 9 PM)"
               required
-              className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f7906c] focus:outline-none text-sm text-[#2d2d2d] bg-[#fdf6f2]/50 placeholder:text-gray-400 font-bold"
+              className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-gray-50 placeholder:text-gray-400 font-bold"
             />
           </div>
 
@@ -198,15 +206,15 @@ export default function AddCategoryModal({
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Custom Upload */}
-              <div className="relative border-2 border-dashed border-[#eeeeee] hover:border-[#f7906c]/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors h-[120px] bg-[#fdf6f2]/30">
+              <div className="relative border-2 border-dashed border-[#eeeeee] hover:border-[#1b3151]/50 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-colors h-[120px] bg-[#1b3151]/5">
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
                   className="absolute inset-0 opacity-0 cursor-pointer"
                 />
-                <Upload className="w-6 h-6 text-[#f7906c] mb-2" />
-                <span className="text-xs font-bold text-[#2d2d2d]">Upload Custom Photo</span>
+                <Upload className="w-6 h-6 text-[#f2bd11] mb-2" />
+                <span className="text-xs font-bold text-[#1b3151]">Upload Custom Photo</span>
                 <span className="text-[10px] text-[#888888] mt-1">PNG, JPG up to 5MB</span>
               </div>
 
@@ -247,7 +255,7 @@ export default function AddCategoryModal({
                     key={idx}
                     type="button"
                     onClick={() => selectPreset(p)}
-                    className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f7906c] transition-all"
+                    className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f2bd11] transition-all"
                   >
                     <img src={p} alt="preset" className="w-full h-full object-cover" />
                   </button>
@@ -268,11 +276,11 @@ export default function AddCategoryModal({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 bg-[#f7906c] hover:bg-[#e8754f] disabled:bg-gray-300 text-white font-bold rounded-[50px] text-sm transition-all shadow-md flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-[#f2bd11] hover:bg-[#dbab0f] disabled:bg-gray-300 text-[#1b3151] font-extrabold rounded-[50px] text-sm transition-all shadow-md flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[#1b3151]" />
                   <span>Saving...</span>
                 </>
               ) : (

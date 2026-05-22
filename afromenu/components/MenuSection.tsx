@@ -27,8 +27,8 @@ export default function MenuSection({
       className="max-w-5xl mx-auto px-4 py-8 border-b border-gray-100 last:border-b-0 scroll-mt-16"
     >
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-1.5 h-6 bg-[#f7906c] rounded-full"></div>
-        <h2 className="font-heading font-extrabold text-xl text-[#2d2d2d] uppercase tracking-wider">
+        <div className="w-1.5 h-6 bg-[#f2bd11] rounded-full"></div>
+        <h2 className="font-heading font-extrabold text-xl text-[#1b3151] uppercase tracking-wider">
           {categoryName}
         </h2>
         <span className="text-[10px] bg-gray-100 text-gray-400 font-bold px-2 py-0.5 rounded-full">
@@ -65,7 +65,7 @@ export default function MenuSection({
                 <div className="flex-1 flex flex-col justify-between min-w-0">
                   <div>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <h4 className="font-bold text-sm text-[#2d2d2d] truncate">
+                      <h4 className="font-bold text-sm text-[#1b3151] truncate">
                         {item.name}
                       </h4>
                       {item.tags?.map((t: string) => {
@@ -82,7 +82,7 @@ export default function MenuSection({
                         return (
                           <span
                             key={t}
-                            className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-[#fbe4db] text-[#f7906c]"
+                            className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-[#f2bd11]/15 text-[#1b3151]"
                           >
                             {t} {tagEmoji}
                           </span>
@@ -96,7 +96,7 @@ export default function MenuSection({
                     )}
                   </div>
 
-                  <span className="font-heading font-extrabold text-sm text-[#f7906c] mt-2 block">
+                  <span className="font-heading font-extrabold text-sm text-[#f2bd11] mt-2 block">
                     {currency}
                     {Number(item.price).toFixed(2)}
                   </span>

@@ -47,26 +47,26 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fdf6f2] flex flex-col justify-between py-12 px-6">
+    <div className="min-h-screen bg-[#fafbfe] flex flex-col justify-between py-12 px-6">
       {/* Top Navbar Header */}
       <header className="max-w-6xl w-full mx-auto flex items-center justify-between mb-8">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 rounded-xl bg-[#f7906c] flex items-center justify-center text-white font-bold">
-            <Utensils className="w-4 h-4" />
+          <div className="w-9 h-9 rounded-xl bg-[#1b3151] flex items-center justify-center text-[#f2bd11] font-bold shadow-md">
+            <Utensils className="w-5 h-5 text-[#f2bd11]" />
           </div>
-          <span className="font-heading font-extrabold text-xl tracking-tight text-[#2d2d2d]">
-            Menu<span className="text-[#f7906c]">QR</span>
+          <span className="font-heading font-extrabold text-xl tracking-tight text-[#1b3151]">
+            Afro<span className="text-[#f2bd11]">menu</span>
           </span>
         </Link>
         
         <div className="flex items-center gap-6">
-          <Link href="/catalog" className="text-sm font-semibold text-[#888888] hover:text-[#2d2d2d] transition-colors">
+          <Link href="/catalog" className="text-sm font-semibold text-gray-500 hover:text-[#1b3151] transition-colors">
             Menu Examples
           </Link>
-          <Link href="/pricing" className="text-sm font-semibold text-[#888888] hover:text-[#2d2d2d] transition-colors">
+          <Link href="/pricing" className="text-sm font-semibold text-gray-500 hover:text-[#1b3151] transition-colors">
             Pricing
           </Link>
-          <Link href="/sign-up" className="px-5 py-2 text-sm font-bold text-white bg-[#f7906c] hover:bg-[#e8754f] rounded-[50px] transition-colors">
+          <Link href="/sign-up" className="px-5 py-2 text-sm font-extrabold text-[#1b3151] bg-[#f2bd11] hover:bg-[#dbab0f] rounded-[50px] transition-colors shadow-sm">
             Sign up
           </Link>
         </div>
@@ -74,12 +74,12 @@ export default function LoginPage() {
 
       {/* Main card */}
       <main className="flex-1 flex items-center justify-center">
-        <div className="bg-white p-8 md:p-10 rounded-[24px] max-w-md w-full border border-[#eeeeee] card-shadow animate-slide-up">
+        <div className="bg-white p-8 md:p-10 rounded-[24px] max-w-md w-full border border-gray-100 shadow-xl animate-slide-up">
           <div className="text-center mb-8">
-            <h2 className="font-heading font-extrabold text-2xl md:text-3xl text-[#2d2d2d] mb-2">
+            <h2 className="font-heading font-extrabold text-2xl md:text-3xl text-[#1b3151] mb-2">
               Welcome Back
             </h2>
-            <p className="text-sm text-[#888888]">
+            <p className="text-sm text-gray-500">
               Log in to manage your QR code digital menus.
             </p>
           </div>
@@ -92,7 +92,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div>
-              <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2">
+              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2">
                 Email Address
               </label>
               <input
@@ -101,12 +101,12 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@restaurant.com"
                 required
-                className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f7906c] focus:outline-none text-sm text-[#2d2d2d] transition-all bg-[#fdf6f2]/50 placeholder:text-gray-400"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#f2bd11] focus:ring-1 focus:ring-[#f2bd11] focus:outline-none text-sm text-[#1b3151] transition-all bg-[#fafbfe]/50 placeholder:text-gray-400 font-semibold"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2">
+              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2">
                 Password
               </label>
               <div className="relative">
@@ -116,12 +116,12 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Your account password"
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f7906c] focus:outline-none text-sm text-[#2d2d2d] pr-10 transition-all bg-[#fdf6f2]/50 placeholder:text-gray-400"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#f2bd11] focus:ring-1 focus:ring-[#f2bd11] focus:outline-none text-sm text-[#1b3151] pr-10 transition-all bg-[#fafbfe]/50 placeholder:text-gray-400 font-semibold"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#2d2d2d]"
+                  className="absolute right-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#1b3151]"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -131,7 +131,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-[#f7906c] hover:bg-[#e8754f] disabled:bg-gray-300 text-white font-bold rounded-[50px] transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg mt-2 text-sm"
+              className="w-full py-3.5 bg-[#f2bd11] hover:bg-[#dbab0f] disabled:bg-gray-300 text-[#1b3151] font-extrabold rounded-[50px] transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg mt-2 text-sm cursor-pointer"
             >
               {loading ? (
                 <span>Signing In...</span>
@@ -144,17 +144,17 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="text-center mt-6 text-xs text-[#888888]">
-            New to MenuQR?{" "}
-            <Link href="/sign-up" className="text-[#f7906c] font-bold hover:underline">
+          <div className="text-center mt-6 text-xs text-gray-500">
+            New to Afromenu?{" "}
+            <Link href="/sign-up" className="text-[#1b3151] font-bold hover:underline">
               Create an Account
             </Link>
           </div>
         </div>
       </main>
 
-      <footer className="text-center text-xs text-[#888888] mt-8">
-        &copy; {new Date().getFullYear()} MenuQR. All rights reserved.
+      <footer className="text-center text-xs text-gray-400 mt-8">
+        &copy; {new Date().getFullYear()} Afromenu. All rights reserved.
       </footer>
     </div>
   );

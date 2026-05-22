@@ -92,14 +92,14 @@ export default function CountryCatalogPage() {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fdf6f2] selection:bg-[#f7906c]/30">
+    <div className="min-h-screen flex flex-col bg-[#f8f9fa] selection:bg-[#f2bd11]/30">
       <Navbar />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-6 py-12">
         {/* Back Link */}
         <Link
           href="/catalog"
-          className="inline-flex items-center gap-2 text-xs font-bold text-[#888888] hover:text-[#f7906c] transition-colors mb-8"
+          className="inline-flex items-center gap-2 text-xs font-bold text-[#888888] hover:text-[#f2bd11] transition-colors mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Countries</span>
@@ -109,7 +109,7 @@ export default function CountryCatalogPage() {
         <div className="mb-12 border-b border-[#eeeeee] pb-6 flex items-center gap-4">
           <span className="text-4xl select-none">{countryInfo.emoji}</span>
           <div>
-            <h1 className="font-heading font-extrabold text-3xl text-[#2d2d2d]">
+            <h1 className="font-heading font-extrabold text-3xl text-[#1b3151]">
               Menus in {countryInfo.name}
             </h1>
             <p className="text-xs text-[#888888] mt-1">
@@ -128,7 +128,7 @@ export default function CountryCatalogPage() {
             </p>
             <Link
               href="/sign-up"
-              className="mt-6 inline-flex py-2.5 px-6 bg-[#f7906c] hover:bg-[#e8754f] text-white font-bold rounded-[50px] text-xs shadow-md transition-all"
+              className="mt-6 inline-flex py-2.5 px-6 bg-[#f2bd11] hover:bg-[#dbab0f] text-[#1b3151] font-bold rounded-[50px] text-xs shadow-md transition-all"
             >
               Add Restaurant Menu
             </Link>
@@ -148,19 +148,19 @@ export default function CountryCatalogPage() {
 
                 <div>
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-[#fdf6f2] border border-[#eeeeee] overflow-hidden flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-[#f8f9fa] border border-[#eeeeee] overflow-hidden flex items-center justify-center">
                       {menu.logo_url ? (
                         <img src={menu.logo_url} alt={menu.name} className="w-full h-full object-cover" />
                       ) : (
-                        <Utensils className="w-6 h-6 text-[#f7906c]" />
+                        <Utensils className="w-6 h-6 text-[#1b3151]" />
                       )}
                     </div>
                     <div>
-                      <h4 className="font-heading font-extrabold text-base text-[#2d2d2d] truncate max-w-[200px]">
+                      <h4 className="font-heading font-extrabold text-base text-[#1b3151] truncate max-w-[200px]">
                         {menu.name}
                       </h4>
                       <p className="text-[9px] text-[#888888] mt-0.5 flex items-center gap-1 font-mono">
-                        <MapPin className="w-3 h-3 text-[#f7906c]" />
+                        <MapPin className="w-3 h-3 text-[#f2bd11]" />
                         <span>{countryInfo.name}</span>
                       </p>
                     </div>
@@ -180,7 +180,7 @@ export default function CountryCatalogPage() {
 
                   <Link
                     href={`/p/${menu.slug}`}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#f7906c] hover:underline"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#f2bd11] hover:underline"
                   >
                     <span>View Stand</span>
                     <ExternalLink className="w-3 h-3" />

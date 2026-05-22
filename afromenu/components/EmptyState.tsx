@@ -14,7 +14,7 @@ export default function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto my-16">
-      <div className="w-20 h-20 rounded-full bg-[#fdf6f2] border border-[#f7906c]/10 text-[#f7906c] flex items-center justify-center mb-6 shadow-md shadow-[#f7906c]/5 animate-pulse">
+      <div className="w-20 h-20 rounded-full bg-[#1b3151]/5 border border-[#f2bd11]/20 text-[#f2bd11] flex items-center justify-center mb-6 shadow-md shadow-[#f2bd11]/5 animate-pulse">
         <Utensils className="w-9 h-9" />
       </div>
       <h3 className="font-heading font-extrabold text-xl text-[#2d2d2d] tracking-tight mb-2">

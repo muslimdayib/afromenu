@@ -30,7 +30,7 @@ export default function RestaurantHeader({
         style={{
           backgroundImage: backgroundUrl
             ? `url(${backgroundUrl})`
-            : "linear-gradient(135deg, #f7906c 0%, #e8754f 100%)",
+            : "linear-gradient(135deg, #1b3151 0%, #1a2b44 100%)",
         }}
       >
         <div className="absolute inset-0 bg-black/35 backdrop-blur-[0.5px]"></div>
@@ -38,7 +38,7 @@ export default function RestaurantHeader({
 
       {/* Profile Box */}
       <div className="max-w-5xl mx-auto px-4 relative -mt-16 mb-8 z-10">
-        <div className="bg-white border border-[#eeeeee] rounded-[24px] p-6 shadow-md shadow-gray-100 flex flex-col items-center text-center">
+        <div className="bg-white border border-gray-100 rounded-[24px] p-6 shadow-md flex flex-col items-center text-center">
           {/* Logo */}
           <div className="w-20 h-20 rounded-full border-4 border-white bg-gray-50 overflow-hidden shadow-md -mt-16 mb-4 flex items-center justify-center flex-shrink-0">
             {logoUrl ? (
@@ -48,24 +48,24 @@ export default function RestaurantHeader({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <Utensils className="w-8 h-8 text-[#f7906c]" />
+              <Utensils className="w-8 h-8 text-[#f2bd11]" />
             )}
           </div>
 
           {/* Restaurant Details */}
-          <h1 className="font-heading font-extrabold text-2xl text-[#2d2d2d] leading-tight">
+          <h1 className="font-heading font-extrabold text-2xl text-[#1b3151] leading-tight">
             {name}
           </h1>
 
           {description && (
-            <p className="text-xs text-[#888888] max-w-md mt-2 leading-relaxed">
+            <p className="text-xs text-gray-500 max-w-md mt-2 leading-relaxed">
               {description}
             </p>
           )}
 
           {address && (
             <p className="text-[10px] text-gray-400 font-mono mt-1 flex items-center justify-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-[#f7906c]" />
+              <MapPin className="w-3.5 h-3.5 text-[#f2bd11]" />
               <span>{address}</span>
             </p>
           )}
@@ -74,8 +74,8 @@ export default function RestaurantHeader({
           <div className="flex flex-wrap items-center justify-center gap-3 mt-4 w-full">
             {/* WiFi */}
             {wifiPassword && (
-              <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#fdf6f2] border border-[#eeeeee] text-gray-600 shadow-sm">
-                <Wifi className="w-3.5 h-3.5 text-[#f7906c]" />
+              <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#1b3151]/5 border border-gray-100 text-[#1b3151] shadow-sm">
+                <Wifi className="w-3.5 h-3.5 text-[#f2bd11]" />
                 <span className="font-bold text-[9px] font-mono tracking-wider">
                   WiFi: {wifiPassword}
                 </span>
@@ -86,9 +86,9 @@ export default function RestaurantHeader({
             {phone && (
               <a
                 href={`tel:${phone}`}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#fdf6f2] border border-[#eeeeee] text-gray-600 shadow-sm hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#1b3151]/5 border border-gray-100 text-[#1b3151] shadow-sm hover:bg-[#1b3151]/10 transition-colors"
               >
-                <Phone className="w-3.5 h-3.5 text-[#f7906c]" />
+                <Phone className="w-3.5 h-3.5 text-[#f2bd11]" />
                 <span className="font-bold text-[9px] font-mono tracking-wider">
                   {phone}
                 </span>

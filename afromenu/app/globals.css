@@ -1,22 +1,22 @@
 @import "tailwindcss";
 
 /* ================================================================== */
-/*  MenuQR Design System — Tailwind v4 Theme Tokens                  */
+/*  Afromenu Design System — Tailwind v4 Theme Tokens                */
 /* ================================================================== */
 
 @theme inline {
-  /* Brand color tokens (warm coral-orange) */
-  --color-brand: #f7906c;
-  --color-brand-dark: #e8754f;
-  --color-brand-light: #fbe4db;
+  /* Brand color tokens (Premium Afromenu V3 Navy & Gold) */
+  --color-brand: #f2bd11;
+  --color-brand-dark: #1b3151;
+  --color-brand-light: #fef8e3;
   
   /* Background / surface system */
-  --color-peach: #fdf6f2;
+  --color-peach: #f8f9fa;
   --color-surface: #ffffff;
   --color-card-border: #eeeeee;
   
   /* Typography scale */
-  --color-text-primary: #2d2d2d;
+  --color-text-primary: #1b3151;
   --color-text-secondary: #888888;
   --color-success: #4caf50;
   
@@ -58,7 +58,7 @@ body {
   background: var(--color-peach);
 }
 ::-webkit-scrollbar-thumb {
-  background: #e2d7d2;
+  background: #cbd5e1;
   border-radius: 9999px;
   border: 2px solid var(--color-peach);
 }
@@ -97,5 +97,5 @@ input, select, textarea {
 }
 .card-shadow-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 30px rgba(247, 144, 108, 0.12);
+  box-shadow: 0 10px 30px rgba(27, 49, 81, 0.08);
 }

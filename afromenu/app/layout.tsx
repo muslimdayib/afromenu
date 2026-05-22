@@ -18,7 +18,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "MenuQR — Premium QR Code Digital Menus for Restaurants",
+  title: "Afromenu — Premium QR Code Digital Menus for Restaurants",
   description: "Create beautiful QR code digital menus for your restaurant, cafe, or food truck. Free 1-month trial, no credit card required.",
 };
 
@@ -26,7 +26,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#fdf6f2",
+  themeColor: "#f8f9fa",
 };
 
 export default function RootLayout({
@@ -36,7 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${poppins.variable} ${inter.variable}`}>
-      <body className="antialiased min-h-screen bg-[#fdf6f2] text-[#2d2d2d] font-body selection:bg-[#f7906c]/30 selection:text-[#e8754f]">
+      <body className="antialiased min-h-screen bg-[#f8f9fa] text-[#2d2d2d] font-body selection:bg-[#f2bd11]/30 selection:text-[#1b3151]">
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

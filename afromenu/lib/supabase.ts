@@ -31,7 +31,7 @@ export interface Establishment {
   currency: string;
   currency_symbol: string;
   language: string;
-  theme: 'light' | 'dark';
+  template_style: string;
   brand_color: string;
   logo_url: string | null;
   background_url: string | null;
@@ -49,6 +49,7 @@ export interface Category {
   image_url: string | null;
   sort_order: number;
   is_visible: boolean;
+  deleted_at: string | null;
   created_at: string;
 }
 
@@ -59,9 +60,11 @@ export interface Item {
   description: string | null;
   price: number;
   image_url: string | null;
+  model_3d_url: string | null;
   is_available: boolean;
   sort_order: number;
   tags: string[];
+  deleted_at: string | null;
   created_at: string;
 }
 
@@ -89,6 +92,7 @@ export interface MenuItem {
   price: number;
   old_price?: number;
   image_url: string | null;
+  model_3d_url: string | null;
   is_hidden: boolean;
   sort_order: number;
 }

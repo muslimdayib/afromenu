@@ -20,6 +20,7 @@ interface EditEstablishmentModalProps {
     background_url: string | null;
     wifi_password: string | null;
     phone: string | null;
+    template_style: string;
   };
 }
 
@@ -52,7 +53,8 @@ export default function EditEstablishmentModal({
   establishment,
 }: EditEstablishmentModalProps) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [brandColor, setBrandColor] = useState("#f7906c");
+  const [brandColor, setBrandColor] = useState("#f2bd11");
+  const [templateStyle, setTemplateStyle] = useState("minimalist");
   const [currency, setCurrency] = useState("");
   const [currencySymbol, setCurrencySymbol] = useState("");
   const [language, setLanguage] = useState("");
@@ -68,7 +70,8 @@ export default function EditEstablishmentModal({
   useEffect(() => {
     if (establishment) {
       setTheme(establishment.theme || "light");
-      setBrandColor(establishment.brand_color || "#f7906c");
+      setBrandColor(establishment.brand_color || "#f2bd11");
+      setTemplateStyle(establishment.template_style || "minimalist");
       setCurrency(establishment.currency || "Somali Shilling");
       setCurrencySymbol(establishment.currency_symbol || "Sh");
       setLanguage(establishment.language || "Somali");
@@ -157,6 +160,7 @@ export default function EditEstablishmentModal({
         .update({
           theme,
           brand_color: brandColor,
+          template_style: templateStyle,
           currency,
           currency_symbol: currencySymbol,
           language,
@@ -181,22 +185,22 @@ export default function EditEstablishmentModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
+      <div className="absolute inset-0 bg-[#1b3151]/40 backdrop-blur-sm" onClick={onClose}></div>
 
       {/* Modal Container */}
-      <div className="bg-white rounded-[24px] max-w-xl w-full p-6 border border-[#eeeeee] relative z-10 shadow-2xl animate-slide-up overflow-y-auto max-h-[90vh]">
+      <div className="bg-white rounded-[24px] max-w-2xl w-full p-6 border border-gray-100 relative z-10 shadow-2xl animate-slide-up overflow-y-auto max-h-[90vh]">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 text-[#888888] hover:text-[#2d2d2d] transition-colors p-1"
+          className="absolute right-4 top-4 text-gray-400 hover:text-[#1b3151] transition-colors p-1"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Title */}
-        <h3 className="font-heading font-extrabold text-xl text-[#2d2d2d] mb-6 flex items-center gap-2">
-          <Palette className="w-5 h-5 text-[#f7906c]" />
-          <span>Edit Establishment Info</span>
+        <h3 className="font-heading font-extrabold text-xl text-[#1b3151] mb-6 flex items-center gap-2">
+          <Palette className="w-5 h-5 text-[#f2bd11]" />
+          <span>Edit Establishment Settings</span>
         </h3>
 
         {error && (
@@ -210,13 +214,13 @@ export default function EditEstablishmentModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Theme */}
             <div>
-              <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2">
+              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2">
                 Establishment Theme
               </label>
               <select
                 value={theme}
                 onChange={(e) => setTheme(e.target.value as "light" | "dark")}
-                className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f7906c] focus:outline-none text-sm text-[#2d2d2d] bg-[#fdf6f2]/50 transition-all cursor-pointer font-bold"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:ring-1 focus:ring-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] transition-all cursor-pointer font-bold"
               >
                 <option value="light">Light Mode (Classic Warm)</option>
                 <option value="dark">Dark Mode (Premium Midnight)</option>
@@ -225,22 +229,55 @@ export default function EditEstablishmentModal({
 
             {/* Brand Color */}
             <div>
-              <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2">
+              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2">
                 Brand Accent Color
               </label>
               <div className="flex items-center gap-3">
                 <div
-                  className="w-10 h-10 rounded-xl shadow-sm border border-[#eeeeee] flex-shrink-0"
+                  className="w-10 h-10 rounded-xl shadow-sm border border-gray-200 flex-shrink-0"
                   style={{ backgroundColor: brandColor }}
                 ></div>
                 <input
                   type="color"
                   value={brandColor}
                   onChange={(e) => setBrandColor(e.target.value)}
-                  className="w-full h-10 rounded-xl cursor-pointer bg-transparent border border-[#eeeeee] p-1.5 focus:outline-none"
+                  className="w-full h-10 rounded-xl cursor-pointer bg-transparent border border-gray-200 p-1.5 focus:outline-none"
                 />
                 <span className="font-mono text-xs font-bold text-gray-500 uppercase">{brandColor}</span>
               </div>
+            </div>
+          </div>
+
+          {/* Template Style Selector */}
+          <div>
+            <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2">
+              Menu Layout Style
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+              {[
+                { id: "minimalist", name: "Minimalist", desc: "Pure typography, clean white." },
+                { id: "visual-grid", name: "Visual Grid", desc: "2-column photo grid style." },
+                { id: "classic-elegant", name: "Classic Elegant", desc: "Serif font & gold details." },
+                { id: "night-owl", name: "Night Owl", desc: "Dark midnight mode view." },
+                { id: "fast-casual", name: "Fast Casual", desc: "Thumbnails, high-speed read." },
+              ].map((style) => {
+                const isSelected = templateStyle === style.id;
+                return (
+                  <button
+                    key={style.id}
+                    type="button"
+                    onClick={() => setTemplateStyle(style.id)}
+                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                      isSelected
+                        ? "border-[#f2bd11] bg-[#1b3151]/5 ring-2 ring-[#f2bd11]"
+                        : "border-gray-200 hover:border-gray-300 bg-white"
+                    }`}
+                  >
+                    <span className="text-xs font-bold text-[#1b3151] block mb-1">{style.name}</span>
+                    <span className="text-[10px] text-gray-500 leading-tight">{style.desc}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -248,7 +285,7 @@ export default function EditEstablishmentModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Currency dropdown */}
             <div>
-              <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2 flex items-center gap-1">
+              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2 flex items-center gap-1">
                 <Coins className="w-3.5 h-3.5 text-gray-400" />
                 <span>Currency Type</span>
               </label>
@@ -259,7 +296,7 @@ export default function EditEstablishmentModal({
                   const found = CURRENCIES.find((c) => c.name === e.target.value);
                   if (found) setCurrencySymbol(found.symbol);
                 }}
-                className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f7906c] focus:outline-none text-sm text-[#2d2d2d] bg-[#fdf6f2]/50 transition-all cursor-pointer"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] transition-all cursor-pointer font-semibold"
               >
                 {CURRENCIES.map((c) => (
                   <option key={c.name} value={c.name}>
@@ -271,7 +308,7 @@ export default function EditEstablishmentModal({
 
             {/* Symbol text */}
             <div>
-              <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <span>Currency Symbol</span>
                 <span className="text-[10px] text-gray-400 font-normal normal-case">Custom character</span>
               </label>
@@ -281,7 +318,7 @@ export default function EditEstablishmentModal({
                 onChange={(e) => setCurrencySymbol(e.target.value)}
                 placeholder="Sh or $"
                 required
-                className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f7906c] focus:outline-none text-sm text-[#2d2d2d] bg-[#fdf6f2]/50 placeholder:text-gray-400 font-bold"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] placeholder:text-gray-400 font-bold"
               />
             </div>
           </div>
@@ -290,40 +327,40 @@ export default function EditEstablishmentModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {/* Logo */}
             <div>
-              <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2">
+              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2">
                 Establishment Logo
               </label>
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-[#eeeeee] overflow-hidden flex items-center justify-center flex-shrink-0 relative">
+                <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-200 overflow-hidden flex items-center justify-center flex-shrink-0 relative">
                   {logoPreview ? (
                     <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
                   ) : (
                     <ImageIcon className="w-6 h-6 text-gray-300" />
                   )}
                 </div>
-                <div className="relative border-2 border-dashed border-[#eeeeee] hover:border-[#f7906c] p-3 rounded-xl text-center cursor-pointer transition-colors flex-1 flex flex-col justify-center items-center h-16 bg-[#fdf6f2]/30">
+                <div className="relative border border-dashed border-gray-300 hover:border-[#1b3151] p-3 rounded-xl text-center cursor-pointer transition-colors flex-1 flex flex-col justify-center items-center h-16 bg-[#f8f9fa]">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleLogoChange}
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
-                  <Upload className="w-4 h-4 text-[#f7906c] mb-1" />
-                  <span className="text-[10px] font-bold text-[#2d2d2d]">Upload Logo</span>
+                  <Upload className="w-4 h-4 text-[#1b3151] mb-1" />
+                  <span className="text-[10px] font-bold text-[#1b3151]">Upload Logo</span>
                 </div>
               </div>
             </div>
 
             {/* Language dropdown */}
             <div>
-              <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2 flex items-center gap-1">
+              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2 flex items-center gap-1">
                 <Globe className="w-3.5 h-3.5 text-gray-400" />
                 <span>Primary Language</span>
               </label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f7906c] focus:outline-none text-sm text-[#2d2d2d] bg-[#fdf6f2]/50 transition-all cursor-pointer font-bold"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] transition-all cursor-pointer font-bold"
               >
                 {LANGUAGES.map((l) => (
                   <option key={l} value={l}>
@@ -336,24 +373,24 @@ export default function EditEstablishmentModal({
 
           {/* Background banner */}
           <div>
-            <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2">
               Customer View Background Banner
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Image Picker */}
-              <div className="relative border-2 border-dashed border-[#eeeeee] hover:border-[#f7906c] p-4 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-colors h-[100px] bg-[#fdf6f2]/30">
+              <div className="relative border border-dashed border-gray-300 hover:border-[#1b3151] p-4 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-colors h-[100px] bg-[#f8f9fa]">
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleBgChange}
                   className="absolute inset-0 opacity-0 cursor-pointer"
                 />
-                <Upload className="w-5 h-5 text-[#f7906c] mb-1" />
-                <span className="text-[10px] font-bold text-[#2d2d2d]">Upload Banner Photo</span>
+                <Upload className="w-5 h-5 text-[#1b3151] mb-1" />
+                <span className="text-[10px] font-bold text-[#1b3151]">Upload Banner Photo</span>
               </div>
               
               {/* Preview */}
-              <div className="border border-[#eeeeee] rounded-xl h-[100px] bg-gray-50 flex items-center justify-center overflow-hidden relative">
+              <div className="border border-gray-200 rounded-xl h-[100px] bg-gray-50 flex items-center justify-center overflow-hidden relative">
                 {bgPreview ? (
                   <>
                     <img src={bgPreview} alt="Background Preview" className="w-full h-full object-cover" />
@@ -363,7 +400,7 @@ export default function EditEstablishmentModal({
                         setBgPreview(null);
                         setBgFile(null);
                       }}
-                      className="absolute top-1.5 right-1.5 bg-black/60 text-white p-1 rounded-full hover:bg-black transition-colors shadow-sm"
+                      className="absolute top-1.5 right-1.5 bg-[#1b3151]/80 text-white p-1 rounded-full hover:bg-[#1b3151] transition-colors shadow-sm"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -376,7 +413,7 @@ export default function EditEstablishmentModal({
 
             {/* Presets */}
             <div className="mt-3">
-              <span className="block text-[10px] font-bold text-[#888888] uppercase tracking-wider mb-2">
+              <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
                 Or select wood & brick presets
               </span>
               <div className="flex gap-2 overflow-x-auto pb-1">
@@ -385,7 +422,7 @@ export default function EditEstablishmentModal({
                     key={idx}
                     type="button"
                     onClick={() => selectBgPreset(bg)}
-                    className="w-12 h-10 rounded overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f7906c] transition-all"
+                    className="w-12 h-10 rounded overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f2bd11] transition-all"
                   >
                     <img src={bg} alt="bg preset" className="w-full h-full object-cover" />
                   </button>
@@ -398,7 +435,7 @@ export default function EditEstablishmentModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* WiFi */}
             <div>
-              <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <Wifi className="w-3.5 h-3.5 text-gray-400" />
                 <span>Wi-Fi Password</span>
               </label>
@@ -407,13 +444,13 @@ export default function EditEstablishmentModal({
                 value={wifiPassword}
                 onChange={(e) => setWifiPassword(e.target.value)}
                 placeholder="e.g. CafeCasteloGuest"
-                className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f7906c] focus:outline-none text-sm text-[#2d2d2d] bg-[#fdf6f2]/50 placeholder:text-gray-400"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] placeholder:text-gray-400"
               />
             </div>
 
             {/* Phone */}
             <div>
-              <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <Phone className="w-3.5 h-3.5 text-gray-400" />
                 <span>Contact Phone</span>
               </label>
@@ -422,7 +459,7 @@ export default function EditEstablishmentModal({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="e.g. +252 61 5000000"
-                className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#f7906c] focus:outline-none text-sm text-[#2d2d2d] bg-[#fdf6f2]/50 placeholder:text-gray-400 font-mono"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] placeholder:text-gray-400 font-mono"
               />
             </div>
           </div>
@@ -432,22 +469,22 @@ export default function EditEstablishmentModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 border border-[#eeeeee] text-[#888888] hover:bg-gray-50 font-bold rounded-[50px] text-sm transition-colors"
+              className="flex-1 py-3 border border-gray-200 text-gray-500 hover:bg-gray-50 font-bold rounded-[50px] text-sm transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 bg-[#f7906c] hover:bg-[#e8754f] disabled:bg-gray-300 text-white font-bold rounded-[50px] text-sm transition-all shadow-md flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-[#f2bd11] hover:bg-[#dbab0f] disabled:bg-gray-300 text-[#1b3151] font-bold rounded-[50px] text-sm transition-all shadow-md flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[#1b3151]" />
                   <span>Saving...</span>
                 </>
               ) : (
-                <span>Save Branding</span>
+                <span>Save Settings</span>
               )}
             </button>
           </div>

@@ -22,18 +22,18 @@ export default function Navbar() {
     <nav
       className={`sticky top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-white/80 backdrop-blur-md border-b border-[#eeeeee] py-3 shadow-sm"
+          ? "bg-white/80 backdrop-blur-md border-b border-gray-100 py-3 shadow-sm"
           : "bg-transparent py-5"
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 rounded-xl bg-[#f7906c] flex items-center justify-center text-white font-bold transition-transform duration-300 group-hover:scale-105">
+          <div className="w-10 h-10 rounded-xl bg-[#1b3151] flex items-center justify-center text-[#f2bd11] font-bold transition-transform duration-300 group-hover:scale-105 shadow-md">
             <Utensils className="w-5 h-5" />
           </div>
-          <span className="font-heading font-extrabold text-2xl tracking-tight text-[#2d2d2d]">
-            Menu<span className="text-[#f7906c]">QR</span>
+          <span className="font-heading font-extrabold text-2xl tracking-tight text-[#1b3151]">
+            Afro<span className="text-[#f2bd11]">menu</span>
           </span>
         </Link>
 
@@ -41,20 +41,20 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-8">
           <Link
             href="/catalog"
-            className="text-sm font-semibold text-[#888888] hover:text-[#f7906c] transition-colors"
+            className="text-sm font-semibold text-gray-500 hover:text-[#f2bd11] transition-colors"
           >
             Menu Examples
           </Link>
           <a
             href="#"
             onClick={(e) => e.preventDefault()}
-            className="text-sm font-semibold text-[#888888] hover:text-[#f7906c] transition-colors cursor-not-allowed"
+            className="text-sm font-semibold text-gray-500 hover:text-[#f2bd11] transition-colors cursor-not-allowed"
           >
             Blog (Coming Soon)
           </a>
           <Link
             href="/pricing"
-            className="text-sm font-semibold text-[#888888] hover:text-[#f7906c] transition-colors"
+            className="text-sm font-semibold text-gray-500 hover:text-[#f2bd11] transition-colors"
           >
             Pricing
           </Link>
@@ -66,19 +66,19 @@ export default function Navbar() {
             <>
               <Link
                 href="/onboarding"
-                className="text-sm font-bold text-[#2d2d2d] hover:text-[#f7906c] transition-colors"
+                className="text-sm font-bold text-[#1b3151] hover:text-[#f2bd11] transition-colors"
               >
                 Onboarding
               </Link>
               <button
                 onClick={signOut}
-                className="text-sm font-bold text-[#2d2d2d] hover:text-red-500 transition-colors"
+                className="text-sm font-bold text-[#1b3151] hover:text-red-500 transition-colors"
               >
                 Log Out
               </button>
               <Link
                 href="/onboarding"
-                className="px-6 py-2.5 rounded-[50px] bg-[#f7906c] hover:bg-[#e8754f] text-white font-bold text-sm transition-all shadow-sm hover:shadow-md"
+                className="px-6 py-2.5 rounded-[50px] bg-[#f2bd11] hover:bg-[#dbab0f] text-[#1b3151] font-bold text-sm transition-all shadow-md"
               >
                 Dashboard
               </Link>
@@ -87,13 +87,13 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="text-sm font-bold text-[#2d2d2d] hover:text-[#f7906c] transition-colors"
+                className="text-sm font-bold text-[#1b3151] hover:text-[#f2bd11] transition-colors"
               >
                 Log in
               </Link>
               <Link
                 href="/sign-up"
-                className="px-6 py-2.5 rounded-[50px] bg-[#f7906c] hover:bg-[#e8754f] text-white font-bold text-sm transition-all shadow-sm hover:shadow-md"
+                className="px-6 py-2.5 rounded-[50px] bg-[#f2bd11] hover:bg-[#dbab0f] text-[#1b3151] font-bold text-sm transition-all shadow-md"
               >
                 Create menu
               </Link>
@@ -104,7 +104,7 @@ export default function Navbar() {
         {/* Mobile Toggle */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="md:hidden text-[#2d2d2d] p-1 focus:outline-none"
+          className="md:hidden text-[#1b3151] p-1 focus:outline-none"
         >
           {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -112,28 +112,28 @@ export default function Navbar() {
 
       {/* Mobile Drawer */}
       {isOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-[#eeeeee] py-6 px-6 flex flex-col gap-4 shadow-lg animate-slide-up">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-100 py-6 px-6 flex flex-col gap-4 shadow-lg animate-slide-up">
           <Link
             href="/catalog"
             onClick={() => setIsOpen(false)}
-            className="text-base font-semibold text-[#888888] hover:text-[#f7906c] py-2"
+            className="text-base font-semibold text-gray-500 hover:text-[#f2bd11] py-2"
           >
             Menu Examples
           </Link>
           <Link
             href="/pricing"
             onClick={() => setIsOpen(false)}
-            className="text-base font-semibold text-[#888888] hover:text-[#f7906c] py-2"
+            className="text-base font-semibold text-gray-500 hover:text-[#f2bd11] py-2"
           >
             Pricing
           </Link>
-          <hr className="border-[#eeeeee]" />
+          <hr className="border-gray-100" />
           {user ? (
             <>
               <Link
                 href="/onboarding"
                 onClick={() => setIsOpen(false)}
-                className="text-base font-bold text-[#2d2d2d] hover:text-[#f7906c] py-2"
+                className="text-base font-bold text-[#1b3151] hover:text-[#f2bd11] py-2"
               >
                 Dashboard
               </Link>
@@ -152,14 +152,14 @@ export default function Navbar() {
               <Link
                 href="/login"
                 onClick={() => setIsOpen(false)}
-                className="text-base font-bold text-[#2d2d2d] hover:text-[#f7906c] py-2"
+                className="text-base font-bold text-[#1b3151] hover:text-[#f2bd11] py-2"
               >
                 Log in
               </Link>
               <Link
                 href="/sign-up"
                 onClick={() => setIsOpen(false)}
-                className="w-full text-center py-3 rounded-[50px] bg-[#f7906c] hover:bg-[#e8754f] text-white font-bold transition-all shadow-sm"
+                className="w-full text-center py-3 rounded-[50px] bg-[#f2bd11] hover:bg-[#dbab0f] text-[#1b3151] font-bold transition-all shadow-md"
               >
                 Create menu
               </Link>

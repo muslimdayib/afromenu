@@ -6,12 +6,14 @@ interface CategoryNavProps {
   categories: { id: string; name: string }[];
   activeCategoryId?: string | null;
   onCategorySelect?: (id: string) => void;
+  brandColor?: string;
 }
 
 export default function CategoryNav({
   categories,
   activeCategoryId,
   onCategorySelect,
+  brandColor,
 }: CategoryNavProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -61,9 +63,13 @@ export default function CategoryNav({
               onClick={() => handleScroll(cat.id)}
               className={`snap-center flex-shrink-0 px-5 py-2 rounded-full font-heading font-semibold text-xs tracking-wide uppercase transition-all duration-300 ${
                 isActive
-                  ? "bg-[#f7906c] text-white shadow-md shadow-[#f7906c]/20 scale-105"
+                  ? "text-white shadow-md scale-105"
                   : "bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
               }`}
+              style={{
+                backgroundColor: isActive ? (brandColor || "#1b3151") : undefined,
+                boxShadow: isActive ? `0 4px 12px ${(brandColor || "#1b3151")}40` : undefined,
+              }}
             >
               {cat.name}
             </button>
