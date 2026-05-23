@@ -36,11 +36,32 @@ import {
   ChevronRight
 } from "lucide-react";
 
+// Helper function to format 24h time to standard AM/PM format (e.g. 09:00 -> 9 AM)
+const formatTime = (timeStr: string | null | undefined): string => {
+  if (!timeStr) return "";
+  try {
+    const parts = timeStr.split(":");
+    const hours = parseInt(parts[0], 10);
+    const minutes = parts[1] ? parseInt(parts[1], 10) : 0;
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    const minutesDisplay = minutes > 0 ? `:${parts[1]}` : "";
+    return `${displayHours}${minutesDisplay} ${ampm}`;
+  } catch (e) {
+    return timeStr;
+  }
+};
+
 export default function HybridMenuPage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
   const { user, profile } = useAuth();
+
+  // Active Live Preview States
+  const [activeStyle, setActiveStyle] = useState("classic-list");
+  const [activeTheme, setActiveTheme] = useState("light");
+  const isDark = activeTheme === "dark";
 
   // Database states
   const [establishment, setEstablishment] = useState<any>(null);
@@ -83,11 +104,102 @@ export default function HybridMenuPage() {
     ? categories.filter(c => (c.section_name || c.sectionName) === guestSelectedSection)
     : categories;
 
+  // Ordered sections for reordering pills
+  const [orderedSections, setOrderedSections] = useState<string[]>([]);
+
+  // Sync ordered sections with allSections while preserving past order
   useEffect(() => {
-    if (allSections.length > 0 && !selectedSection) {
-      setSelectedSection(allSections[0]);
+    setOrderedSections(prev => {
+      const currentSet = new Set(prev);
+      const newSections = allSections.filter(s => !currentSet.has(s));
+      const filteredPrev = prev.filter(s => allSections.includes(s));
+      return [...filteredPrev, ...newSections];
+    });
+  }, [categories, localSections]);
+
+  // Tab Title synchronization when name changes
+  useEffect(() => {
+    if (establishment?.name) {
+      document.title = `${establishment.name} - AfroMenu Editor`;
     }
-  }, [allSections, selectedSection]);
+  }, [establishment?.name]);
+
+  // Section pill reordering
+  const handleMoveSection = (index: number, direction: "left" | "right") => {
+    const swapIndex = direction === "left" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= orderedSections.length) return;
+    
+    setOrderedSections(prev => {
+      const updated = [...prev];
+      const temp = updated[index];
+      updated[index] = updated[swapIndex];
+      updated[swapIndex] = temp;
+      return updated;
+    });
+  };
+
+  // Section pill renaming
+  const handleRenameSection = async (oldName: string) => {
+    const newName = prompt(`Rename section "${oldName}" to:`, oldName);
+    if (!newName || !newName.trim() || newName.trim() === oldName) return;
+    const trimmedNew = newName.trim();
+    
+    // Optimistic update
+    setCategories(prev => prev.map(c => {
+      if ((c.section_name || c.sectionName) === oldName) {
+        return { ...c, section_name: trimmedNew, sectionName: trimmedNew };
+      }
+      return c;
+    }));
+    
+    setLocalSections(prev => prev.map(s => s === oldName ? trimmedNew : s));
+    if (selectedSection === oldName) setSelectedSection(trimmedNew);
+
+    try {
+      const catsToUpdate = categories.filter(c => (c.section_name || c.sectionName) === oldName);
+      await Promise.all(catsToUpdate.map(cat => 
+        fetch("/api/categories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: cat.id, sectionName: trimmedNew })
+        })
+      ));
+      fetchMenuData();
+    } catch (err) {
+      console.error("Failed to rename section categories:", err);
+    }
+  };
+
+  // Section pill deleting
+  const handleDeleteSection = async (sectionName: string) => {
+    if (!confirm(`Are you sure you want to delete the section "${sectionName}" and all of its categories?`)) return;
+    
+    // Optimistic update
+    setCategories(prev => prev.filter(c => (c.section_name || c.sectionName) !== sectionName));
+    setLocalSections(prev => prev.filter(s => s !== sectionName));
+    if (selectedSection === sectionName) {
+      const remaining = allSections.filter(s => s !== sectionName);
+      setSelectedSection(remaining[0] || null);
+    }
+
+    try {
+      const catsToDelete = categories.filter(c => (c.section_name || c.sectionName) === sectionName);
+      await Promise.all(catsToDelete.map(cat => 
+        fetch(`/api/categories?id=${cat.id}`, {
+          method: "DELETE"
+        })
+      ));
+      fetchMenuData();
+    } catch (err) {
+      console.error("Failed to delete section categories:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (orderedSections.length > 0 && !selectedSection) {
+      setSelectedSection(orderedSections[0]);
+    }
+  }, [orderedSections, selectedSection]);
 
   useEffect(() => {
     if (guestSections.length > 0 && !guestSelectedSection) {
@@ -128,6 +240,10 @@ export default function HybridMenuPage() {
       }
 
       setEstablishment(data.establishment);
+      if (data.establishment) {
+        setActiveStyle(data.establishment.menu_style || "classic-list");
+        setActiveTheme(data.establishment.theme || "light");
+      }
       setCategories(data.categories || []);
       setItems(data.items || []);
 
@@ -302,163 +418,264 @@ export default function HybridMenuPage() {
       return matchesCatName || hasMatchingItems;
     });
 
+    const brandColor = establishment.brand_color || establishment.brandColor || "#f7906c";
+
     return (
-      <div className="min-h-screen bg-[#fdf6f2] pb-24 text-[#2d2d2d] font-sans antialiased">
+      <div className={`min-h-screen pb-24 font-sans antialiased transition-colors duration-300 ${isDark ? "bg-[#121212] text-[#f5f5f5]" : "bg-[#fdf6f2] text-[#2d2d2d]"}`}>
         
         {/* PREMIUM HEADER */}
-        <header className="bg-white border-b border-gray-100/80 sticky top-0 z-30 shadow-sm px-6 py-4 flex items-center justify-between max-w-[430px] mx-auto">
+        <header className={`sticky top-0 z-30 shadow-sm px-6 py-4 flex items-center justify-between max-w-[430px] mx-auto border-b transition-colors duration-300 ${isDark ? "bg-[#1e1e1e] border-zinc-800" : "bg-white border-gray-100/80"}`}>
           {/* X close button top left */}
           <button
             onClick={() => router.push("/dashboard")}
-            className="w-9 h-9 rounded-full bg-[#fdf6f2] hover:bg-[#f7906c]/10 flex items-center justify-center text-[#2d2d2d] hover:text-[#f7906c] transition-all font-bold border border-transparent"
+            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all font-bold border border-transparent ${isDark ? "bg-[#121212] text-white hover:bg-zinc-800" : "bg-[#fdf6f2] text-[#2d2d2d] hover:bg-[#f7906c]/10"}`}
           >
             ✕
           </button>
           
           {/* Restaurant name centered and bold */}
-          <h1 className="font-heading font-extrabold text-base tracking-tight truncate max-w-[180px] text-[#2d2d2d] uppercase">
+          <h1 className={`font-heading font-extrabold text-base tracking-tight truncate max-w-[180px] uppercase text-center flex-1 ${isDark ? "text-white" : "text-[#2d2d2d]"}`}>
             {establishment.name}
           </h1>
 
           {/* Small user avatar circle top right */}
-          <div className="w-8 h-8 rounded-full bg-[#f7906c] text-white flex items-center justify-center font-bold text-sm shadow-sm uppercase select-none">
+          <div className="w-8 h-8 rounded-full bg-[#f7906c] text-white flex items-center justify-center font-bold text-sm shadow-sm uppercase select-none flex-shrink-0">
             {profile?.name ? profile.name[0] : (user?.email ? user.email[0] : "O")}
           </div>
         </header>
 
-        {/* CONTENT CONTAINER (Mobile size locked at 430px centered) */}
-        <main className="max-w-[430px] mx-auto px-4 py-6 flex flex-col gap-6">
-          
-          {/* ESTABLISHMENT INFO SECTION */}
-          <section className="bg-white p-5 rounded-3xl border border-orange-50 shadow-sm flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h2 className="font-heading font-black text-lg text-[#2d2d2d] tracking-tight">
+        {/* COVER IMAGE AREA */}
+        <div 
+          className="w-full relative" 
+          style={{
+            height: "120px",
+            backgroundImage: establishment.background_url ? `url(${establishment.background_url})` : `linear-gradient(135deg, ${brandColor} 0%, #1a2b44 100%)`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+        </div>
+
+        {/* ESTABLISHMENT INFO CARD (white card below cover, overlapping the cover at the top) */}
+        <div className="max-w-[430px] mx-auto px-4 relative -mt-10 mb-6 z-10">
+          <div className={`p-6 rounded-[28px] border shadow-md flex flex-col gap-4 relative ${isDark ? "bg-[#1e1e1e] border-zinc-800" : "bg-white border-gray-100"}`}>
+            
+            {/* Overlapping Logo */}
+            <div className="absolute -top-12 left-6">
+              <div className={`w-20 h-20 rounded-full border-4 overflow-hidden shadow-md flex items-center justify-center flex-shrink-0 select-none ${isDark ? "border-[#1e1e1e] bg-zinc-800" : "border-white bg-slate-50"}`}>
+                {establishment.logo_url ? (
+                  <img src={establishment.logo_url} alt="Logo" className="w-full h-full object-cover" />
+                ) : (
+                  <span className={`text-2xl font-black uppercase ${isDark ? "text-white" : "text-[#1b3151]"}`}>
+                    {establishment.name ? establishment.name[0] : "A"}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Content offset for overlapping logo */}
+            <div className="pt-8">
+              {/* Name & Pencil edit icon */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className={`font-heading font-black text-xl tracking-tight leading-tight ${isDark ? "text-white" : "text-[#2d2d2d]"}`}>
                   {establishment.name}
                 </h2>
                 <button
                   onClick={() => setIsEstModalOpen(true)}
-                  className="p-1.5 rounded-full hover:bg-[#fdf6f2] text-gray-400 hover:text-[#f7906c] transition-all"
-                  title="Edit Info"
+                  className={`p-1.5 rounded-full text-gray-400 hover:text-[#f7906c] transition-all cursor-pointer ${isDark ? "hover:bg-zinc-800" : "hover:bg-[#fdf6f2]"}`}
+                  title="Edit Settings"
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
               </div>
-              <span className="text-[9px] bg-[#f7906c]/15 text-[#f7906c] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                Visual Editor
-              </span>
-            </div>
 
-            {/* Location & WiFi Rows */}
-            <div className="flex flex-col gap-2.5 text-xs text-gray-500 font-medium">
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4 text-[#f7906c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span>{establishment.phone || "Main Street branch, Somalia"}</span>
-              </div>
-              
-              {establishment.wifi_password && (
+              {/* Description (if set) */}
+              {establishment.description && (
+                <p className="text-xs text-gray-400 leading-relaxed mt-2">
+                  {establishment.description}
+                </p>
+              )}
+
+              {/* Location, WiFi, Phone Rows */}
+              <div className="flex flex-col gap-2.5 mt-4 text-xs text-gray-500 font-medium">
+                {/* Location pin icon + address */}
                 <div className="flex items-center gap-2">
-                  <Wifi className="w-4 h-4 text-[#f7906c]" />
-                  <span>Wi-Fi: <strong className="font-mono text-[#2d2d2d]">{establishment.wifi_password}</strong></span>
+                  <svg className="w-4 h-4 text-[#f7906c] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>{establishment.phone || "Main Street branch, Somalia"}</span>
                 </div>
+
+                {/* WiFi (if set) */}
+                {establishment.wifi_password && (
+                  <div className="flex items-center gap-2">
+                    <Wifi className="w-4 h-4 text-[#f7906c] flex-shrink-0" />
+                    <span>Wi-Fi: <strong className="font-mono text-[#2d2d2d] dark:text-white">{establishment.wifi_password}</strong></span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CONTENT CONTAINER (Mobile size locked at 430px centered) */}
+        <main className="max-w-[430px] mx-auto px-4 py-6 flex flex-col gap-6">
+          
+          {/* BLUE INFO BANNER FOR SAMPLE DATA */}
+          {items.some(i => i.name.toLowerCase().includes("sample")) && (
+            <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold flex items-start gap-2.5 animate-slide-up shadow-sm">
+              <Sparkles className="w-4.5 h-4.5 text-blue-500 flex-shrink-0 mt-0.5 animate-pulse" />
+              <div className="flex-1">
+                These are sample items. Edit or delete them and add your real menu items.
+              </div>
+            </div>
+          )}
+
+          {/* SECTION PILLS ROW */}
+          <div className="flex flex-col gap-3">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Sections Pills</span>
+            
+            <div className="flex items-start gap-4 overflow-x-auto pb-4 scrollbar-none">
+              {/* "+" button before first pill */}
+              <button
+                onClick={handleAddSection}
+                className="w-9 h-9 rounded-full bg-[#fdf6f2] hover:bg-[#f7906c] text-[#f7906c] hover:text-white flex items-center justify-center shadow-sm flex-shrink-0 transition-all font-black border border-orange-100 cursor-pointer"
+                title="Add Section Pill"
+              >
+                +
+              </button>
+
+              {/* Render ordered sections */}
+              {orderedSections.length === 0 ? (
+                <span className="text-xs text-gray-400 italic py-2">No sections created yet. Tap + to add.</span>
+              ) : (
+                orderedSections.map((sec, idx) => {
+                  const isSelected = selectedSection === sec;
+                  return (
+                    <div key={sec} className="flex flex-col items-center gap-2 flex-shrink-0">
+                      {/* The Pill Row: pill + "+" button after each pill */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setSelectedSection(sec)}
+                          className={`px-4 py-2 text-xs font-bold rounded-full transition-all border cursor-pointer ${
+                            isSelected
+                              ? "bg-[#f7906c] border-[#f7906c] text-white font-extrabold"
+                              : "bg-white border-[#f7906c] text-[#f7906c] hover:bg-[#fdf6f2]"
+                          }`}
+                        >
+                          <span>{sec}</span>
+                        </button>
+                        
+                        {/* "+" button after this pill */}
+                        <button
+                          onClick={() => {
+                            const name = prompt("Enter new section name to add after this:");
+                            if (name && name.trim()) {
+                              const trimmed = name.trim();
+                              if (!orderedSections.includes(trimmed)) {
+                                setLocalSections(prev => [...prev, trimmed]);
+                                setOrderedSections(prev => {
+                                  const updated = [...prev];
+                                  updated.splice(idx + 1, 0, trimmed);
+                                  return updated;
+                                });
+                              }
+                              setSelectedSection(trimmed);
+                            }
+                          }}
+                          className="w-5 h-5 rounded-full bg-orange-50 text-[#f7906c] hover:bg-[#f7906c] hover:text-white flex items-center justify-center text-[10px] font-bold border border-orange-100 transition-all cursor-pointer"
+                          title="Add section after this"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {/* Below each pill: 4 small buttons (← → pencil trash) */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleMoveSection(idx, "left")}
+                          disabled={idx === 0}
+                          className="w-5 h-5 rounded bg-slate-50 border border-gray-150 disabled:opacity-30 text-gray-500 hover:text-[#f7906c] flex items-center justify-center text-[10px] cursor-pointer"
+                          title="Move Left"
+                        >
+                          ←
+                        </button>
+                        <button
+                          onClick={() => handleMoveSection(idx, "right")}
+                          disabled={idx === orderedSections.length - 1}
+                          className="w-5 h-5 rounded bg-slate-50 border border-gray-150 disabled:opacity-30 text-gray-500 hover:text-[#f7906c] flex items-center justify-center text-[10px] cursor-pointer"
+                          title="Move Right"
+                        >
+                          →
+                        </button>
+                        <button
+                          onClick={() => handleRenameSection(sec)}
+                          className="w-5 h-5 rounded bg-slate-50 border border-gray-150 text-gray-500 hover:text-blue-500 flex items-center justify-center text-[10px] cursor-pointer"
+                          title="Rename Section"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSection(sec)}
+                          className="w-5 h-5 rounded bg-red-50 border border-red-100 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center text-[10px] cursor-pointer"
+                          title="Delete Section"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
 
-            <hr className="border-gray-50" />
-
-            {/* Description Text */}
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Curate beautiful menu categories, add delicious mock items with custom images, and organize items for your customers in real-time.
-            </p>
-
-            {/* TAB PILLS ROW */}
-            <div className="mt-2 flex flex-col gap-3">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Sections Pills</span>
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-                
-                {/* Plus button to add a section */}
-                <button
-                  onClick={handleAddSection}
-                  className="w-8 h-8 rounded-full bg-[#fdf6f2] hover:bg-[#f7906c] text-[#f7906c] hover:text-white flex items-center justify-center shadow-sm flex-shrink-0 transition-all font-black border border-orange-100"
-                  title="Add Section Pill"
-                >
-                  +
-                </button>
-
-                {/* Sections/Tabs */}
-                {allSections.length === 0 ? (
-                  <span className="text-xs text-gray-400 italic">No sections created yet. Tap + to add.</span>
-                ) : (
-                  allSections.map((sec) => {
-                    const isSelected = selectedSection === sec;
-                    return (
-                      <button
-                        key={sec}
-                        onClick={() => setSelectedSection(sec)}
-                        className={`px-4 py-2 text-xs font-bold rounded-full transition-all flex-shrink-0 flex items-center gap-1.5 shadow-sm border ${
-                          isSelected
-                            ? "bg-[#f7906c] border-[#f7906c] text-white font-extrabold"
-                            : "bg-white border-[#eeeeee] text-[#2d2d2d] hover:bg-[#fdf6f2]"
-                        }`}
-                      >
-                        <span>{sec}</span>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Operations Below Active/Selected Pill */}
-              {categories.map((cat, idx) => {
-                const isSelected = expandedCategoryId === cat.id;
-                if (!isSelected) return null;
-                return (
-                  <div key={cat.id} className="flex items-center gap-2 bg-[#fdf6f2]/80 p-2.5 rounded-2xl border border-orange-100/50 justify-center w-full animate-slide-up">
-                    <span className="text-[10px] font-bold text-[#f7906c] uppercase tracking-wider mr-2">{cat.name} actions:</span>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => handleSwapOrder(idx, "up")}
-                        disabled={idx === 0}
-                        className="w-7 h-7 rounded-lg bg-white border border-gray-100 disabled:opacity-30 text-gray-600 hover:text-[#f7906c] flex items-center justify-center transition-all shadow-sm"
-                        title="Move Up"
-                      >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleSwapOrder(idx, "down")}
-                        disabled={idx === categories.length - 1}
-                        className="w-7 h-7 rounded-lg bg-white border border-gray-100 disabled:opacity-30 text-gray-600 hover:text-[#f7906c] flex items-center justify-center transition-all shadow-sm"
-                        title="Move Down"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setCategoryToEdit(cat);
-                          setIsCatModalOpen(true);
-                        }}
-                        className="w-7 h-7 rounded-lg bg-white border border-gray-100 text-gray-600 hover:text-blue-500 flex items-center justify-center transition-all shadow-sm"
-                        title="Edit Category"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCategory(cat.id)}
-                        className="w-7 h-7 rounded-lg bg-red-50 border border-red-100 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shadow-sm"
-                        title="Delete Category"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+            {/* Operations Below Active Category (If expanded) */}
+            {categories.map((cat, idx) => {
+              const isSelected = expandedCategoryId === cat.id;
+              if (!isSelected) return null;
+              return (
+                <div key={cat.id} className="flex items-center gap-2 bg-[#fdf6f2]/80 p-2.5 rounded-2xl border border-orange-100/50 justify-center w-full animate-slide-up">
+                  <span className="text-[10px] font-bold text-[#f7906c] uppercase tracking-wider mr-2">{cat.name} actions:</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleSwapOrder(idx, "up")}
+                      disabled={idx === 0}
+                      className="w-7 h-7 rounded-lg bg-white border border-gray-100 disabled:opacity-30 text-gray-600 hover:text-[#f7906c] flex items-center justify-center transition-all shadow-sm cursor-pointer"
+                      title="Move Up"
+                    >
+                      <ArrowUp className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleSwapOrder(idx, "down")}
+                      disabled={idx === categories.length - 1}
+                      className="w-7 h-7 rounded-lg bg-white border border-gray-100 disabled:opacity-30 text-gray-600 hover:text-[#f7906c] flex items-center justify-center transition-all shadow-sm cursor-pointer"
+                      title="Move Down"
+                    >
+                      <ArrowDown className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setCategoryToEdit(cat);
+                        setIsCatModalOpen(true);
+                      }}
+                      className="w-7 h-7 rounded-lg bg-white border border-gray-100 text-gray-600 hover:text-blue-500 flex items-center justify-center transition-all shadow-sm cursor-pointer"
+                      title="Edit Category"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCategory(cat.id)}
+                      className="w-7 h-7 rounded-lg bg-red-50 border border-red-100 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shadow-sm cursor-pointer"
+                      title="Delete Category"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                );
-              })}
-
-            </div>
-          </section>
+                </div>
+              );
+            })}
+          </div>
 
           {/* SEARCH BAR */}
           <section className="relative w-full">
@@ -477,27 +694,26 @@ export default function HybridMenuPage() {
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[10px] font-black text-gray-400 hover:text-[#f7906c] uppercase"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[10px] font-black text-gray-400 hover:text-[#f7906c] uppercase cursor-pointer"
               >
                 Clear
               </button>
             )}
           </section>
 
-          {/* ADD CATEGORY SECTION */}
-          <section className="flex flex-col gap-2 items-center text-center">
+          {/* ADD CATEGORY AREA */}
+          <section className="flex flex-col gap-2">
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">
-              Add Category
+              ADD CATEGORY
             </span>
             <button
               onClick={() => {
                 setCategoryToEdit(null);
                 setIsCatModalOpen(true);
               }}
-              className="w-full py-4 bg-[#f7906c] hover:bg-[#e27653] text-white font-extrabold rounded-[50px] shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
+              className="w-full py-4 bg-[#f7906c] hover:bg-[#e27653] text-white font-extrabold rounded-[20px] shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
             >
               <Plus className="w-5 h-5 text-white" />
-              <span>Create New Section</span>
             </button>
           </section>
 
@@ -507,20 +723,21 @@ export default function HybridMenuPage() {
               const cat = categories.find((c) => c.id === expandedCategoryId);
               if (!cat) return null;
               const catItems = items.filter((i) => i.category_id === cat.id);
+              const displayCategoryName = cat.name + (cat.time_from && cat.time_to ? ` (${formatTime(cat.time_from)} - ${formatTime(cat.time_to)})` : "");
 
               return (
-                <div className="bg-white p-5 rounded-[24px] border border-orange-50 shadow-md flex flex-col gap-5 animate-slide-up">
+                <div className={`p-5 rounded-[24px] border shadow-md flex flex-col gap-5 animate-slide-up transition-colors duration-300 ${isDark ? "bg-[#1e1e1e] border-zinc-800" : "bg-white border-orange-50"}`}>
                   {/* Header row */}
                   <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                     <button
                       onClick={() => setExpandedCategoryId(null)}
-                      className="flex items-center gap-1 text-xs font-black text-[#f7906c] hover:underline"
+                      className="flex items-center gap-1 text-xs font-black text-[#f7906c] hover:opacity-80 cursor-pointer"
                     >
                       <ArrowLeft className="w-4 h-4" />
                       <span>Back to Sections</span>
                     </button>
-                    <h3 className="font-heading font-black text-sm text-[#2d2d2d] uppercase truncate max-w-[150px]">
-                      {cat.name}
+                    <h3 className={`font-heading font-black text-sm uppercase truncate max-w-[180px] ${isDark ? "text-white" : "text-[#2d2d2d]"}`}>
+                      {displayCategoryName}
                     </h3>
                   </div>
 
@@ -539,7 +756,7 @@ export default function HybridMenuPage() {
 
                   {/* Items List */}
                   {catItems.length === 0 ? (
-                    <div className="text-center py-10 text-xs text-gray-400 italic bg-gray-50 rounded-2xl border border-dashed border-gray-150">
+                    <div className={`text-center py-10 text-xs text-gray-400 italic rounded-2xl border border-dashed ${isDark ? "bg-[#121212]/50 border-zinc-800" : "bg-gray-50 border-gray-150"}`}>
                       No items inside this category. Click &apos;Add Item&apos; above.
                     </div>
                   ) : (
@@ -547,13 +764,13 @@ export default function HybridMenuPage() {
                       {catItems.map((item) => (
                         <div
                           key={item.id}
-                          className={`p-3 rounded-2xl bg-[#fdf6f2]/40 border border-orange-50/50 shadow-xs flex items-center justify-between gap-3 ${
-                            !item.is_available ? "opacity-60 bg-gray-50/50" : ""
-                          }`}
+                          className={`p-3 rounded-2xl border shadow-xs flex items-center justify-between gap-3 transition-colors duration-300 ${
+                            !item.is_available ? "opacity-50" : ""
+                          } ${isDark ? "bg-[#121212]/40 border-zinc-850" : "bg-[#fdf6f2]/40 border-orange-50/50"}`}
                         >
                           {/* Item cover photo & info */}
                           <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center relative shadow-sm">
+                            <div className={`w-12 h-12 rounded-xl border overflow-hidden flex-shrink-0 flex items-center justify-center relative shadow-sm ${isDark ? "bg-[#1e1e1e] border-zinc-800" : "bg-white border-gray-100"}`}>
                               {item.image_url ? (
                                 <img
                                   src={item.image_url}
@@ -566,12 +783,12 @@ export default function HybridMenuPage() {
                             </div>
                             <div>
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <h5 className="font-extrabold text-xs text-[#2d2d2d]">{item.name}</h5>
+                                <h5 className={`font-extrabold text-xs transition-colors duration-300 ${isDark ? "text-white" : "text-[#2d2d2d]"}`}>{item.name}</h5>
                                 {item.weight && (
                                   <span className="text-[9px] font-bold text-gray-400 font-mono">({item.weight})</span>
                                 )}
                                 {!item.is_available && (
-                                  <span className="text-[7px] font-black uppercase px-1 py-0.5 rounded bg-gray-200 text-gray-600">
+                                  <span className="text-[7px] font-black uppercase px-1 py-0.5 rounded bg-gray-200 text-gray-600 font-sans">
                                     Unavailable
                                   </span>
                                 )}
@@ -602,13 +819,13 @@ export default function HybridMenuPage() {
                                 setTargetCategoryIdForItem(cat.id);
                                 setIsItemModalOpen(true);
                               }}
-                              className="w-8 h-8 rounded-full hover:bg-[#f7906c]/10 flex items-center justify-center text-gray-400 hover:text-[#f7906c] transition-colors cursor-pointer"
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-[#f7906c] transition-colors cursor-pointer ${isDark ? "hover:bg-zinc-800" : "hover:bg-[#f7906c]/10"}`}
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button
                               onClick={() => handleDeleteItem(item.id)}
-                              className="w-8 h-8 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors cursor-pointer ${isDark ? "hover:bg-red-950" : "hover:bg-red-50"}`}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -621,72 +838,208 @@ export default function HybridMenuPage() {
               );
             })()
           ) : (
-            /* OTHERWISE RENDER CATEGORY LIST AS CARDS */
-            <section className="flex flex-col gap-5">
+            /* OTHERWISE RENDER CATEGORY LIST AS CARDS RESPONDING TO ACTIVESTYLE */
+            <section className={activeStyle === "visual-grid" ? "grid grid-cols-2 gap-4 animate-slide-up" : "flex flex-col gap-5 animate-slide-up"}>
               {filteredCategories.length === 0 ? (
-                <div className="p-10 text-center bg-white border border-orange-50 rounded-[32px] shadow-sm text-gray-400 flex flex-col items-center">
+                <div className={`col-span-full p-10 text-center rounded-[32px] shadow-sm text-gray-400 flex flex-col items-center border ${isDark ? "bg-[#1e1e1e] border-zinc-800" : "bg-white border-orange-50"}`}>
                   <Utensils className="w-10 h-10 mb-2 text-gray-300" />
                   <p className="text-xs font-semibold">No active categories found.</p>
                 </div>
               ) : (
-                filteredCategories.map((cat) => {
+                filteredCategories.map((cat, catIdx) => {
                   const catItems = items.filter((i) => i.category_id === cat.id);
+                  const displayCategoryName = cat.name + (cat.time_from && cat.time_to ? ` (${formatTime(cat.time_from)} - ${formatTime(cat.time_to)})` : "");
 
                   return (
                     <div key={cat.id} className="flex flex-col gap-3">
-                      
-                      {/* Category Card */}
-                      <div
-                        className="h-[160px] rounded-[16px] overflow-hidden border border-orange-100/50 relative shadow-md cursor-pointer transition-all hover:shadow-lg transform active:scale-[0.99]"
-                        onClick={() => setExpandedCategoryId(cat.id)}
-                        style={{
-                          backgroundImage: cat.image_url ? `url(${cat.image_url})` : "none",
-                          backgroundColor: "#1b3151",
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                        }}
-                      >
-                        {/* Dark Overlay */}
-                        <div className="absolute inset-0 bg-black/55 z-0"></div>
-
-                        {/* Top Right Action Icons */}
+                      {activeStyle === "classic-list" ? (
+                        /* Classic List Style in Editor: Simple Row */
                         <div
-                          className="absolute top-4 right-4 flex items-center gap-1.5 z-10"
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={() => setExpandedCategoryId(cat.id)}
+                          className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 shadow-xs cursor-pointer active:scale-[0.99] ${
+                            isDark
+                              ? "bg-[#1e1e1e] border-zinc-800 hover:border-[#f7906c]/40 hover:bg-zinc-800"
+                              : "bg-white border-gray-100 hover:border-[#f7906c]/40 hover:bg-[#fdf6f2]/10"
+                          }`}
                         >
-                          {/* Edit Pencil */}
-                          <button
-                            onClick={() => {
-                              setCategoryToEdit(cat);
-                              setIsCatModalOpen(true);
-                            }}
-                            className="w-7 h-7 rounded-full bg-[#f7906c] hover:bg-[#e27653] text-white flex items-center justify-center transition-all shadow-md cursor-pointer"
-                            title="Edit Category Name & Photo"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isDark ? "bg-zinc-800 text-[#f7906c]" : "bg-orange-50 text-[#f7906c]"}`}>
+                              📁
+                            </div>
+                            <div>
+                              <h3 className={`font-heading font-black text-xs uppercase ${isDark ? "text-white" : "text-[#2d2d2d]"}`}>
+                                {displayCategoryName}
+                              </h3>
+                              <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider block mt-0.5">
+                                {catItems.length} Dishes
+                              </span>
+                            </div>
+                          </div>
 
-                          {/* Trash Delete */}
-                          <button
-                            onClick={() => handleDeleteCategory(cat.id)}
-                            className="w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all shadow-md cursor-pointer"
-                            title="Delete Category"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {/* Actions */}
+                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => {
+                                setExpandedCategoryId(prev => prev === cat.id ? null : cat.id);
+                              }}
+                              className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors shadow-xs cursor-pointer ${
+                                isDark ? "bg-[#121212] text-gray-300 hover:text-[#f7906c]" : "bg-slate-50 text-gray-500 hover:text-[#f7906c]"
+                              }`}
+                              title="Toggle Items View"
+                            >
+                              {expandedCategoryId === cat.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setCategoryToEdit(cat);
+                                setIsCatModalOpen(true);
+                              }}
+                              className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors shadow-xs cursor-pointer ${
+                                isDark ? "bg-[#121212] text-gray-400 hover:text-[#f7906c] hover:bg-zinc-800" : "bg-slate-50 text-gray-400 hover:text-[#f7906c] hover:bg-[#f7906c]/10"
+                              }`}
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteCategory(cat.id)}
+                              className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors shadow-xs cursor-pointer ${
+                                isDark ? "bg-[#121212] text-gray-400 hover:text-red-500 hover:bg-red-950" : "bg-red-50 text-gray-400 hover:text-red-500 hover:bg-red-100"
+                              }`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
+                      ) : activeStyle === "visual-grid" ? (
+                        /* Visual Grid Style in Editor: 2-column cards */
+                        <div
+                          onClick={() => setExpandedCategoryId(cat.id)}
+                          className={`rounded-2xl border shadow-sm cursor-pointer transition-all active:scale-[0.99] flex flex-col justify-between h-[150px] overflow-hidden group hover:shadow-md ${
+                            isDark ? "bg-[#1e1e1e] border-zinc-800 text-white" : "bg-white border-gray-100 text-[#2d2d2d]"
+                          }`}
+                        >
+                          <div className={`relative h-20 flex items-center justify-center overflow-hidden ${isDark ? "bg-[#121212]" : "bg-slate-50"}`}>
+                            {cat.image_url ? (
+                              <img src={cat.image_url} alt={cat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                            ) : (
+                              <Utensils className="w-6 h-6 text-gray-300" />
+                            )}
+                            <div className="absolute top-2 right-2 flex items-center gap-1 z-10" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => {
+                                  setExpandedCategoryId(prev => prev === cat.id ? null : cat.id);
+                                }}
+                                className={`w-6 h-6 rounded-full flex items-center justify-center transition-all shadow-xs cursor-pointer ${
+                                  isDark ? "bg-zinc-800 text-gray-300 hover:text-white" : "bg-white text-gray-500 hover:text-[#f7906c]"
+                                }`}
+                                title="Toggle Items View"
+                              >
+                                {expandedCategoryId === cat.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                              </button>
+                              <button
+                                onClick={() => {
+                                    setCategoryToEdit(cat);
+                                    setIsCatModalOpen(true);
+                                }}
+                                className={`w-6 h-6 rounded-full flex items-center justify-center transition-all shadow-xs cursor-pointer ${
+                                  isDark ? "bg-zinc-800 text-gray-300 hover:text-white" : "bg-white text-gray-500 hover:text-[#f7906c]"
+                                }`}
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCategory(cat.id)}
+                                className={`w-6 h-6 rounded-full flex items-center justify-center transition-all shadow-xs cursor-pointer ${
+                                  isDark ? "bg-zinc-800 text-gray-300 hover:text-red-500" : "bg-white text-gray-500 hover:text-red-500"
+                                }`}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
 
-                        {/* Centered Name */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center px-6 z-0 text-center select-none">
-                          <h3 className="font-heading font-extrabold text-xl text-white uppercase tracking-wider drop-shadow-md">
-                            {cat.name}
-                          </h3>
-                          <span className="text-[9px] text-white/95 font-black mt-1 bg-white/10 px-3 py-0.5 rounded-full uppercase tracking-wider">
-                            {catItems.length} Dishes
-                          </span>
+                          <div className="p-3">
+                            <h3 className={`font-heading font-black text-[11px] uppercase truncate leading-tight ${isDark ? "text-white" : "text-[#2d2d2d]"}`}>
+                              {displayCategoryName}
+                            </h3>
+                            <span className="text-[8px] text-gray-400 font-bold uppercase tracking-wider mt-0.5 block">
+                              {catItems.length} Dishes
+                            </span>
+                          </div>
                         </div>
+                      ) : (
+                        /* Photo Cards Style: Full Width landscape cards */
+                        <div
+                          className="h-[160px] rounded-[16px] overflow-hidden border border-orange-100/50 relative shadow-md cursor-pointer transition-all hover:shadow-lg transform active:scale-[0.99]"
+                          onClick={() => setExpandedCategoryId(cat.id)}
+                          style={{
+                            backgroundImage: cat.image_url ? `url(${cat.image_url})` : "none",
+                            backgroundColor: "#1b3151",
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                          }}
+                        >
+                          <div className="absolute inset-0 bg-black/55 z-0"></div>
+
+                          {/* Top Right action button group */}
+                          <div
+                            className="absolute top-4 right-4 flex items-center gap-1.5 z-10"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={() => {
+                                setExpandedCategoryId(prev => prev === cat.id ? null : cat.id);
+                              }}
+                              className="w-7 h-7 rounded-full bg-[#1b3151] hover:bg-[#2c4b75] text-white flex items-center justify-center transition-all shadow-md cursor-pointer border border-white/20"
+                              title="Toggle Items View"
+                            >
+                              {expandedCategoryId === cat.id ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setCategoryToEdit(cat);
+                                setIsCatModalOpen(true);
+                              }}
+                              className="w-7 h-7 rounded-full bg-[#f7906c] hover:bg-[#e27653] text-white flex items-center justify-center transition-all shadow-md cursor-pointer"
+                              title="Edit Category"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteCategory(cat.id)}
+                              className="w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all shadow-md cursor-pointer"
+                              title="Delete Category"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+
+                          <div className="absolute inset-0 flex flex-col items-center justify-center px-6 z-0 text-center select-none">
+                            <h3 className="font-heading font-extrabold text-xl text-white uppercase tracking-wider drop-shadow-md">
+                              {displayCategoryName}
+                            </h3>
+                            <span className="text-[10px] text-white/95 font-black mt-1.5 bg-white/10 px-4 py-0.5 rounded-full uppercase tracking-wider">
+                              {catItems.length} dishes • Click to view
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Between cards insert button */}
+                      <div className="flex justify-center my-2" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => {
+                            setCategoryToEdit(null);
+                            setIsCatModalOpen(true);
+                          }}
+                          className="w-8 h-8 rounded-full bg-[#f7906c] hover:bg-[#e27653] text-white flex items-center justify-center shadow-md transition-all cursor-pointer font-bold border-2 border-white"
+                          title="Insert Category"
+                        >
+                          +
+                        </button>
                       </div>
-
                     </div>
                   );
                 })
@@ -716,6 +1069,7 @@ export default function HybridMenuPage() {
           categoryToEdit={categoryToEdit}
           nextSortOrder={categories.length}
           defaultSectionName={selectedSection}
+          existingSections={allSections}
         />
 
         <AddItemModal
@@ -733,9 +1087,24 @@ export default function HybridMenuPage() {
 
         <EditEstablishmentModal
           isOpen={isEstModalOpen}
-          onClose={() => setIsEstModalOpen(false)}
-          onSuccess={fetchMenuData}
+          onClose={() => {
+            setIsEstModalOpen(false);
+            if (establishment) {
+              setActiveStyle(establishment.menu_style || "classic-list");
+              setActiveTheme(establishment.theme || "light");
+            }
+          }}
+          onSuccess={(updatedEst) => {
+            if (updatedEst) {
+              setEstablishment(updatedEst);
+              setActiveStyle(updatedEst.menu_style || "classic-list");
+              setActiveTheme(updatedEst.theme || "light");
+            }
+            fetchMenuData();
+          }}
           establishment={establishment}
+          onPreviewThemeChange={(theme) => setActiveTheme(theme)}
+          onPreviewStyleChange={(style) => setActiveStyle(style)}
         />
 
         <AccountSettingsModal
@@ -749,7 +1118,6 @@ export default function HybridMenuPage() {
   /* =========================================================================
      2. GUEST / CUSTOMER MENU VIEW (Public digital menu)
      ========================================================================= */
-  const isDark = establishment.theme === "dark";
   const brandColor = establishment.brand_color || establishment.brandColor || "#f7906c";
   const brandStyles = {
     "--brand-color": brandColor,

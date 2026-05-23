@@ -7,8 +7,24 @@ export async function POST(req: Request) {
     const body = await req.json();
     console.log("Category POST body:", body);
 
-    const { id, establishmentId, name, imageUrl, sortOrder, isVisible, sectionName, section_name } = body;
+    const {
+      id,
+      establishmentId,
+      name,
+      imageUrl,
+      sortOrder,
+      isVisible,
+      sectionName,
+      section_name,
+      timeFrom,
+      timeTo,
+      time_from,
+      time_to,
+    } = body;
+
     const finalSectionName = sectionName !== undefined ? sectionName : section_name;
+    const finalTimeFrom = timeFrom !== undefined ? timeFrom : time_from;
+    const finalTimeTo = timeTo !== undefined ? timeTo : time_to;
 
     if (id) {
       // Flexible Update existing
@@ -18,6 +34,8 @@ export async function POST(req: Request) {
       if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
       if (isVisible !== undefined) updateData.isVisible = isVisible;
       if (finalSectionName !== undefined) updateData.sectionName = finalSectionName || null;
+      if (finalTimeFrom !== undefined) updateData.timeFrom = finalTimeFrom || null;
+      if (finalTimeTo !== undefined) updateData.timeTo = finalTimeTo || null;
 
       const category = await prisma.category.update({
         where: { id },
@@ -47,6 +65,8 @@ export async function POST(req: Request) {
           sortOrder: sortOrder || 0,
           isVisible: isVisible !== undefined ? isVisible : true,
           sectionName: finalSectionName || null,
+          timeFrom: finalTimeFrom || null,
+          timeTo: finalTimeTo || null,
         },
       });
       console.log("Category created successfully:", category);

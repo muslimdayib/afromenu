@@ -172,6 +172,7 @@ export default function AddItemModal({
     setError(null);
     setAddonSearch("");
     setIsAddonDropdownOpen(false);
+    setLoading(false);
   }, [itemToEdit, isOpen]);
 
   // Extract unique addon groups from allLoadedItems

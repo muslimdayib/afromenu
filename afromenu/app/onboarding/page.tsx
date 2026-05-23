@@ -123,77 +123,44 @@ function OnboardingContent() {
   const [language, setLanguage] = useState("Somali");
   const [templateStyle, setTemplateStyle] = useState("minimalist");
   const [loading, setLoading] = useState(false);
-  const [checkingExisting, setCheckingExisting] = useState(true);
+  const [checkingExisting, setCheckingExisting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if owner already has an establishment, if so, redirect immediately
+  // Check if owner already has an establishment, if so, redirect immediately in the background
   useEffect(() => {
     async function checkExistingEstablishment() {
       if (!user) return;
-      setError(null);
-      setCheckingExisting(true);
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.warn("API request timed out after 5 seconds. Aborting...");
-        controller.abort();
-      }, 5000);
 
       try {
-        // Retrieve session token to authenticate the API request
         let token = session?.access_token;
         if (!token) {
           const { data: sessionData } = await supabase.auth.getSession();
           token = sessionData.session?.access_token;
         }
 
-        if (!token) {
-          throw new Error("No active session token found. Please log in again.");
-        }
+        if (!token) return;
 
-        console.log("Starting API fetch to connection-pooled establishments endpoint...");
         const res = await fetch("/api/establishments/mine", {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${token}`,
           },
-          signal: controller.signal,
         });
 
-        clearTimeout(timeoutId);
-        console.log("API response received");
+        if (!res.ok) return;
 
         const responseData = await res.json();
-
-        if (!res.ok) {
-          throw new Error(
-            responseData.details || responseData.error || "Failed to query establishments."
-          );
-        }
-
         const establishments = responseData.establishments;
 
         const searchParams = new URLSearchParams(window.location.search);
         const isForceNew = searchParams.get("new") === "true";
 
-        // Redirect to dashboard if the user already has an establishment
         if (!isForceNew && establishments && establishments.length > 0) {
           console.log("Establishment found. Redirecting to dashboard.");
           router.push("/dashboard");
-          return;
-        } else {
-          console.log("0 establishments found or forced new onboarding. Stopping spinner.");
         }
-      } catch (err: any) {
-        clearTimeout(timeoutId);
-        console.error("Error checking existing establishment:", err);
-        if (err.name === "AbortError") {
-          setError("Database connection check timed out. Bypassing check and loading form.");
-        } else {
-          setError(err?.message || "Failed to check existing establishments.");
-        }
-      } finally {
-        setCheckingExisting(false);
+      } catch (err) {
+        console.error("Silent error checking existing establishment:", err);
       }
     }
 

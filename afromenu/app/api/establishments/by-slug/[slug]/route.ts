@@ -28,8 +28,8 @@ export async function GET(
       );
     }
 
-    // 2. Fetch categories
-    const categories = await prisma.category.findMany({
+    // 2. Fetch categories (with automatic sample data seeding on first load if zero categories exist)
+    let categories = await prisma.category.findMany({
       where: {
         establishmentId: establishment.id,
       },
@@ -37,6 +37,80 @@ export async function GET(
         sortOrder: "asc",
       },
     });
+
+    if (categories.length === 0) {
+      console.log("Seeding sample data for new establishment:", establishment.id);
+      try {
+        const sampleFood = await prisma.category.create({
+          data: {
+            establishmentId: establishment.id,
+            name: "FOOD",
+            sectionName: "Food",
+            imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop&q=60",
+            sortOrder: 0,
+            isVisible: true,
+          },
+        });
+
+        await prisma.item.createMany({
+          data: [
+            {
+              categoryId: sampleFood.id,
+              name: "Sample Burger",
+              price: 5.00,
+              description: "Edit this item",
+              sortOrder: 0,
+              isAvailable: true,
+              isVisible: true,
+            },
+            {
+              categoryId: sampleFood.id,
+              name: "Sample Pizza",
+              price: 8.00,
+              description: "Edit this item",
+              sortOrder: 1,
+              isAvailable: true,
+              isVisible: true,
+            },
+          ],
+        });
+
+        const sampleDrinks = await prisma.category.create({
+          data: {
+            establishmentId: establishment.id,
+            name: "DRINKS",
+            sectionName: "Drinks",
+            imageUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&auto=format&fit=crop&q=60",
+            sortOrder: 1,
+            isVisible: true,
+          },
+        });
+
+        await prisma.item.create({
+          data: {
+            categoryId: sampleDrinks.id,
+            name: "Sample Coffee",
+            price: 2.00,
+            description: "Edit this item",
+            sortOrder: 0,
+            isAvailable: true,
+            isVisible: true,
+          },
+        });
+
+        // Re-fetch categories
+        categories = await prisma.category.findMany({
+          where: {
+            establishmentId: establishment.id,
+          },
+          orderBy: {
+            sortOrder: "asc",
+          },
+        });
+      } catch (seedErr) {
+        console.error("Failed to seed sample data:", seedErr);
+      }
+    }
 
     // 3. Fetch items
     const categoryIds = categories.map((c) => c.id);
@@ -83,6 +157,8 @@ export async function GET(
       sort_order: cat.sortOrder,
       is_visible: cat.isVisible,
       section_name: cat.sectionName,
+      time_from: cat.timeFrom,
+      time_to: cat.timeTo,
       created_at: cat.createdAt.toISOString(),
     }));
 

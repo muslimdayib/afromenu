@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { X, Upload, Palette, Image as ImageIcon, Loader2, Coins, Globe, Wifi, Phone } from "lucide-react";
+import { X, Upload, Palette, Image as ImageIcon, Loader2, Coins, Globe, Wifi, Phone, Check } from "lucide-react";
 
 interface EditEstablishmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (updatedEstablishment?: any) => void;
   establishment: {
     id: string;
     name: string;
@@ -23,6 +23,8 @@ interface EditEstablishmentModalProps {
     template_style: string;
     menu_style?: string | null;
   };
+  onPreviewThemeChange?: (theme: "light" | "dark") => void;
+  onPreviewStyleChange?: (style: string) => void;
 }
 
 const CURRENCIES = [
@@ -52,6 +54,8 @@ export default function EditEstablishmentModal({
   onClose,
   onSuccess,
   establishment,
+  onPreviewThemeChange,
+  onPreviewStyleChange,
 }: EditEstablishmentModalProps) {
   const [name, setName] = useState("");
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -66,7 +70,10 @@ export default function EditEstablishmentModal({
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [bgFile, setBgFile] = useState<File | null>(null);
   const [bgPreview, setBgPreview] = useState<string | null>(null);
+  
+  // Fast checkmark states
   const [loading, setLoading] = useState(false);
+  const [savedCheck, setSavedCheck] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -83,6 +90,8 @@ export default function EditEstablishmentModal({
       setLogoPreview(establishment.logo_url);
       setBgPreview(establishment.background_url);
     }
+    setSavedCheck(false);
+    setLoading(false);
   }, [establishment, isOpen]);
 
   if (!isOpen) return null;
@@ -108,22 +117,26 @@ export default function EditEstablishmentModal({
     setBgPreview(url);
   };
 
+  // Save Settings with Optimistic Updates
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSavedCheck(false);
 
     let finalLogoUrl = logoPreview;
     let finalBgUrl = bgPreview;
+    
+    // Backup original state to revert on failure
+    const originalBackup = { ...establishment };
 
     try {
-      // Get the active session token to authorize the Prisma API update
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error("Authorization session not found. Please log in again.");
       }
 
-      // 1. Upload Logo if custom image added
+      // 1. Upload custom logo if selected
       if (logoFile) {
         const fileExt = logoFile.name.split(".").pop();
         const fileName = `logo-${Date.now()}.${fileExt}`;
@@ -133,9 +146,7 @@ export default function EditEstablishmentModal({
           .from("menu-images")
           .upload(filePath, logoFile, { upsert: true });
 
-        if (uploadErr) {
-          console.warn("Logo upload skipped:", uploadErr.message);
-        } else {
+        if (!uploadErr) {
           const { data: { publicUrl } } = supabase.storage
             .from("menu-images")
             .getPublicUrl(filePath);
@@ -143,7 +154,7 @@ export default function EditEstablishmentModal({
         }
       }
 
-      // 2. Upload Background if custom banner photo selected
+      // 2. Upload custom banner cover if selected
       if (bgFile) {
         const fileExt = bgFile.name.split(".").pop();
         const fileName = `bg-${Date.now()}.${fileExt}`;
@@ -153,9 +164,7 @@ export default function EditEstablishmentModal({
           .from("menu-images")
           .upload(filePath, bgFile, { upsert: true });
 
-        if (uploadErr) {
-          console.warn("Background upload skipped, preset retained.");
-        } else {
+        if (!uploadErr) {
           const { data: { publicUrl } } = supabase.storage
             .from("menu-images")
             .getPublicUrl(filePath);
@@ -163,7 +172,25 @@ export default function EditEstablishmentModal({
         }
       }
 
-      // 3. Update DB using REST API rather than supabase client (which fails due to RLS blocks)
+      // 3. OPTIMISTIC UPDATE: Instantly sync parent UI with changes!
+      const optimisticEst = {
+        ...establishment,
+        name,
+        theme,
+        brand_color: brandColor,
+        currency,
+        currency_symbol: currencySymbol,
+        language,
+        wifi_password: wifiPassword || null,
+        phone: phone || null,
+        logo_url: finalLogoUrl || null,
+        background_url: finalBgUrl || null,
+        menu_style: menuStyle,
+      };
+
+      onSuccess(optimisticEst);
+
+      // 4. Send API request in background
       const payload = {
         name,
         theme,
@@ -192,10 +219,23 @@ export default function EditEstablishmentModal({
         throw new Error(errJson.error || errJson.details || "Failed to update establishment details.");
       }
 
-      onSuccess();
-      onClose();
+      const resJson = await res.json();
+      if (resJson.success && resJson.establishment) {
+        // Sync final confirmed database values
+        onSuccess(resJson.establishment);
+      }
+
+      // Show checkmark and schedule exit
+      setSavedCheck(true);
+      setTimeout(() => {
+        onClose();
+      }, 1200);
+
     } catch (err: any) {
+      console.error("Optimistic save failed:", err);
       setError(err?.message || "Failed to update establishment details.");
+      // Revert parent UI back to original state on failure
+      onSuccess(originalBackup);
     } finally {
       setLoading(false);
     }
@@ -253,7 +293,11 @@ export default function EditEstablishmentModal({
               </label>
               <select
                 value={theme}
-                onChange={(e) => setTheme(e.target.value as "light" | "dark")}
+                onChange={(e) => {
+                  const val = e.target.value as "light" | "dark";
+                  setTheme(val);
+                  if (onPreviewThemeChange) onPreviewThemeChange(val);
+                }}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#f7906c] focus:ring-1 focus:ring-[#f7906c] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] transition-all cursor-pointer font-bold"
               >
                 <option value="light">Light Mode</option>
@@ -344,7 +388,10 @@ export default function EditEstablishmentModal({
                   <button
                     key={style.id}
                     type="button"
-                    onClick={() => setMenuStyle(style.id)}
+                    onClick={() => {
+                      setMenuStyle(style.id);
+                      if (onPreviewStyleChange) onPreviewStyleChange(style.id);
+                    }}
                     className={`p-4 rounded-2xl border text-left flex flex-col gap-3 transition-all cursor-pointer ${
                       isSelected
                         ? "border-[#f7906c] bg-[#f7906c]/5 ring-2 ring-[#f7906c]/15"
@@ -563,6 +610,11 @@ export default function EditEstablishmentModal({
                   <Loader2 className="w-4 h-4 animate-spin text-white" />
                   <span>Saving...</span>
                 </>
+              ) : savedCheck ? (
+                <div className="flex items-center gap-1">
+                  <Check className="w-4 h-4 text-white" />
+                  <span>Saved!</span>
+                </div>
               ) : (
                 <span>Save Settings</span>
               )}
