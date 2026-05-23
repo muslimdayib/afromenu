@@ -64,6 +64,10 @@ export interface Item {
   is_available: boolean;
   sort_order: number;
   tags: string[];
+  addons?: any;
+  scheduled_price?: number | null;
+  scheduled_start?: string | null;
+  scheduled_end?: string | null;
   deleted_at: string | null;
   created_at: string;
 }

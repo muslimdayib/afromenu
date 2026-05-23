@@ -29,6 +29,7 @@ model Establishment {
   theme          String     @default("light") @db.VarChar(10)
   brandColor     String?    @default("#f7906c") @map("brand_color") @db.VarChar(7)
   templateStyle  String?    @default("minimalist") @map("template_style") @db.VarChar(50)
+  menuStyle      String?    @default("classic-list") @map("menu_style") @db.VarChar(50)
   logoUrl        String?    @map("logo_url")
   backgroundUrl  String?    @map("background_url")
   wifiPassword   String?    @map("wifi_password") @db.VarChar(100)
@@ -61,17 +62,25 @@ model Category {
 }
 
 model Item {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  categoryId  String   @map("category_id") @db.Uuid
-  name        String   @db.VarChar(200)
-  description String?
-  price       Decimal  @db.Decimal(10, 2)
-  imageUrl    String?  @map("image_url")
-  isAvailable Boolean  @default(true) @map("is_available")
-  sortOrder   Int      @default(0) @map("sort_order")
-  tags        String[] @default([]) @db.VarChar
-  createdAt   DateTime @default(dbgenerated("timezone('utc'::text, now())")) @map("created_at") @db.Timestamptz(6)
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId     String    @map("category_id") @db.Uuid
+  name           String    @db.VarChar(200)
+  weight         String?
+  price          Decimal   @db.Decimal(10, 2)
+  oldPrice       Decimal?  @map("old_price") @db.Decimal(10, 2)
+  variants       Json?     @default("[]")
+  description    String?
+  imageUrl       String?   @map("image_url")
+  isVisible      Boolean   @default(true) @map("is_visible")
+  isAvailable    Boolean   @default(true) @map("is_available")
+  sortOrder      Int       @default(0) @map("sort_order")
+  tags           String[]  @default([]) @db.VarChar
+  addons         Json?     @default("[]")
+  scheduledPrice Decimal?  @map("scheduled_price") @db.Decimal(10, 2)
+  scheduledStart DateTime? @map("scheduled_start") @db.Timestamptz(6)
+  scheduledEnd   DateTime? @map("scheduled_end") @db.Timestamptz(6)
+  createdAt      DateTime  @default(dbgenerated("timezone('utc'::text, now())")) @map("created_at") @db.Timestamptz(6)
+  category       Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([categoryId], map: "idx_items_category_id")
   @@map("items")

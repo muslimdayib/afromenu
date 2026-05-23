@@ -21,6 +21,7 @@ interface EditEstablishmentModalProps {
     wifi_password: string | null;
     phone: string | null;
     template_style: string;
+    menu_style?: string | null;
   };
 }
 
@@ -52,9 +53,10 @@ export default function EditEstablishmentModal({
   onSuccess,
   establishment,
 }: EditEstablishmentModalProps) {
+  const [name, setName] = useState("");
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [brandColor, setBrandColor] = useState("#f2bd11");
-  const [templateStyle, setTemplateStyle] = useState("minimalist");
+  const [menuStyle, setMenuStyle] = useState("classic-list");
   const [currency, setCurrency] = useState("");
   const [currencySymbol, setCurrencySymbol] = useState("");
   const [language, setLanguage] = useState("");
@@ -69,9 +71,10 @@ export default function EditEstablishmentModal({
 
   useEffect(() => {
     if (establishment) {
+      setName(establishment.name || "");
       setTheme(establishment.theme || "light");
       setBrandColor(establishment.brand_color || "#f2bd11");
-      setTemplateStyle(establishment.template_style || "minimalist");
+      setMenuStyle(establishment.menu_style || "classic-list");
       setCurrency(establishment.currency || "Somali Shilling");
       setCurrencySymbol(establishment.currency_symbol || "Sh");
       setLanguage(establishment.language || "Somali");
@@ -114,7 +117,13 @@ export default function EditEstablishmentModal({
     let finalBgUrl = bgPreview;
 
     try {
-      // 1. Upload Logo if exists
+      // Get the active session token to authorize the Prisma API update
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Authorization session not found. Please log in again.");
+      }
+
+      // 1. Upload Logo if custom image added
       if (logoFile) {
         const fileExt = logoFile.name.split(".").pop();
         const fileName = `logo-${Date.now()}.${fileExt}`;
@@ -134,7 +143,7 @@ export default function EditEstablishmentModal({
         }
       }
 
-      // 2. Upload Background if exists
+      // 2. Upload Background if custom banner photo selected
       if (bgFile) {
         const fileExt = bgFile.name.split(".").pop();
         const fileName = `bg-${Date.now()}.${fileExt}`;
@@ -154,24 +163,34 @@ export default function EditEstablishmentModal({
         }
       }
 
-      // 3. Update DB
-      const { error: updateErr } = await supabase
-        .from("establishments")
-        .update({
-          theme,
-          brand_color: brandColor,
-          template_style: templateStyle,
-          currency,
-          currency_symbol: currencySymbol,
-          language,
-          wifi_password: wifiPassword || null,
-          phone: phone || null,
-          logo_url: finalLogoUrl || null,
-          background_url: finalBgUrl || null,
-        })
-        .eq("id", establishment.id);
+      // 3. Update DB using REST API rather than supabase client (which fails due to RLS blocks)
+      const payload = {
+        name,
+        theme,
+        brand_color: brandColor,
+        currency,
+        currency_symbol: currencySymbol,
+        language,
+        wifi_password: wifiPassword || null,
+        phone: phone || null,
+        logo_url: finalLogoUrl || null,
+        background_url: finalBgUrl || null,
+        menu_style: menuStyle,
+      };
 
-      if (updateErr) throw updateErr;
+      const res = await fetch(`/api/establishments/${establishment.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json();
+        throw new Error(errJson.error || errJson.details || "Failed to update establishment details.");
+      }
 
       onSuccess();
       onClose();
@@ -199,37 +218,52 @@ export default function EditEstablishmentModal({
 
         {/* Title */}
         <h3 className="font-heading font-extrabold text-xl text-[#1b3151] mb-6 flex items-center gap-2">
-          <Palette className="w-5 h-5 text-[#f2bd11]" />
+          <Palette className="w-5 h-5 text-[#f7906c]" />
           <span>Edit Establishment Settings</span>
         </h3>
 
         {error && (
-          <div className="p-4 mb-6 rounded-xl bg-red-50 text-red-600 text-xs font-semibold border border-red-100">
+          <div className="p-4 mb-6 rounded-xl bg-red-50 text-red-600 text-xs font-semibold border border-red-100 animate-shake">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSave} className="flex flex-col gap-6">
+          {/* Establishment Name */}
+          <div>
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2">
+              Establishment Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Castelo Restaurant"
+              required
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#f7906c] focus:ring-1 focus:ring-[#f7906c] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] placeholder:text-gray-400 font-bold transition-all"
+            />
+          </div>
+
           {/* Theme & Brand Color Picker */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Theme */}
+            {/* Color Theme */}
             <div>
-              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2">
-                Establishment Theme
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2">
+                Color Theme
               </label>
               <select
                 value={theme}
                 onChange={(e) => setTheme(e.target.value as "light" | "dark")}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:ring-1 focus:ring-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] transition-all cursor-pointer font-bold"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#f7906c] focus:ring-1 focus:ring-[#f7906c] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] transition-all cursor-pointer font-bold"
               >
-                <option value="light">Light Mode (Classic Warm)</option>
-                <option value="dark">Dark Mode (Premium Midnight)</option>
+                <option value="light">Light Mode</option>
+                <option value="dark">Dark Mode</option>
               </select>
             </div>
 
             {/* Brand Color */}
             <div>
-              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2">
                 Brand Accent Color
               </label>
               <div className="flex items-center gap-3">
@@ -241,40 +275,87 @@ export default function EditEstablishmentModal({
                   type="color"
                   value={brandColor}
                   onChange={(e) => setBrandColor(e.target.value)}
-                  className="w-full h-10 rounded-xl cursor-pointer bg-transparent border border-gray-200 p-1.5 focus:outline-none"
+                  className="w-full h-10 rounded-xl cursor-pointer bg-transparent border border-gray-200 p-1.5 focus:outline-none focus:border-[#f7906c]"
                 />
                 <span className="font-mono text-xs font-bold text-gray-500 uppercase">{brandColor}</span>
               </div>
             </div>
           </div>
 
-          {/* Template Style Selector */}
+          {/* Menu Display Style Selector */}
           <div>
-            <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2">
-              Menu Layout Style
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2">
+              Menu Display Style
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { id: "minimalist", name: "Minimalist", desc: "Pure typography, clean white." },
-                { id: "visual-grid", name: "Visual Grid", desc: "2-column photo grid style." },
-                { id: "classic-elegant", name: "Classic Elegant", desc: "Serif font & gold details." },
-                { id: "night-owl", name: "Night Owl", desc: "Dark midnight mode view." },
-                { id: "fast-casual", name: "Fast Casual", desc: "Thumbnails, high-speed read." },
+                {
+                  id: "classic-list",
+                  name: "Classic List",
+                  desc: "Simple list items, name left, price right.",
+                  preview: (
+                    <div className="flex flex-col gap-1 w-full p-2 bg-slate-50 rounded border border-gray-100">
+                      <div className="flex items-center justify-between border-b border-gray-100 pb-1 text-[8px] font-bold text-slate-400">
+                        <span>🍔 Avocado Toast</span>
+                        <span>$8.50</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[8px] font-bold text-slate-400">
+                        <span>☕ Brewed Cappuccino</span>
+                        <span>$3.00</span>
+                      </div>
+                    </div>
+                  )
+                },
+                {
+                  id: "visual-grid",
+                  name: "Visual Grid",
+                  desc: "2-column visual grid with items and photo covers.",
+                  preview: (
+                    <div className="grid grid-cols-2 gap-1 w-full">
+                      <div className="p-1 bg-slate-50 rounded border border-gray-100 flex flex-col gap-0.5">
+                        <div className="h-6 w-full bg-slate-200 rounded-sm"></div>
+                        <span className="text-[6px] font-black text-slate-400 leading-none">Toast</span>
+                        <span className="text-[5px] text-[#f7906c] font-bold leading-none">$8.50</span>
+                      </div>
+                      <div className="p-1 bg-slate-50 rounded border border-gray-100 flex flex-col gap-0.5">
+                        <div className="h-6 w-full bg-slate-200 rounded-sm"></div>
+                        <span className="text-[6px] font-black text-slate-400 leading-none">Coffee</span>
+                        <span className="text-[5px] text-[#f7906c] font-bold leading-none">$3.00</span>
+                      </div>
+                    </div>
+                  )
+                },
+                {
+                  id: "photo-cards",
+                  name: "Photo Cards",
+                  desc: "Large card view with full image and centered text.",
+                  preview: (
+                    <div className="flex flex-col gap-1 w-full">
+                      <div className="h-9 w-full bg-slate-400 rounded relative flex items-center justify-center overflow-hidden">
+                        <div className="absolute inset-0 bg-black/40"></div>
+                        <span className="text-[6px] font-black text-white z-10 uppercase tracking-wider">Avocado Toast • $8.50</span>
+                      </div>
+                    </div>
+                  )
+                }
               ].map((style) => {
-                const isSelected = templateStyle === style.id;
+                const isSelected = menuStyle === style.id;
                 return (
                   <button
                     key={style.id}
                     type="button"
-                    onClick={() => setTemplateStyle(style.id)}
-                    className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${
+                    onClick={() => setMenuStyle(style.id)}
+                    className={`p-4 rounded-2xl border text-left flex flex-col gap-3 transition-all cursor-pointer ${
                       isSelected
-                        ? "border-[#f2bd11] bg-[#1b3151]/5 ring-2 ring-[#f2bd11]"
+                        ? "border-[#f7906c] bg-[#f7906c]/5 ring-2 ring-[#f7906c]/15"
                         : "border-gray-200 hover:border-gray-300 bg-white"
                     }`}
                   >
-                    <span className="text-xs font-bold text-[#1b3151] block mb-1">{style.name}</span>
-                    <span className="text-[10px] text-gray-500 leading-tight">{style.desc}</span>
+                    <div>
+                      <span className="text-xs font-black text-[#1b3151] block mb-1">{style.name}</span>
+                      <span className="text-[9px] text-gray-500 leading-tight block">{style.desc}</span>
+                    </div>
+                    {style.preview}
                   </button>
                 );
               })}
@@ -285,7 +366,7 @@ export default function EditEstablishmentModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Currency dropdown */}
             <div>
-              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2 flex items-center gap-1">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                 <Coins className="w-3.5 h-3.5 text-gray-400" />
                 <span>Currency Type</span>
               </label>
@@ -296,7 +377,7 @@ export default function EditEstablishmentModal({
                   const found = CURRENCIES.find((c) => c.name === e.target.value);
                   if (found) setCurrencySymbol(found.symbol);
                 }}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] transition-all cursor-pointer font-semibold"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#f7906c] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] transition-all cursor-pointer font-semibold"
               >
                 {CURRENCIES.map((c) => (
                   <option key={c.name} value={c.name}>
@@ -308,9 +389,8 @@ export default function EditEstablishmentModal({
 
             {/* Symbol text */}
             <div>
-              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <span>Currency Symbol</span>
-                <span className="text-[10px] text-gray-400 font-normal normal-case">Custom character</span>
               </label>
               <input
                 type="text"
@@ -318,7 +398,7 @@ export default function EditEstablishmentModal({
                 onChange={(e) => setCurrencySymbol(e.target.value)}
                 placeholder="Sh or $"
                 required
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] placeholder:text-gray-400 font-bold"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#f7906c] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] placeholder:text-gray-400 font-bold"
               />
             </div>
           </div>
@@ -327,7 +407,7 @@ export default function EditEstablishmentModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {/* Logo */}
             <div>
-              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2">
                 Establishment Logo
               </label>
               <div className="flex items-center gap-4">
@@ -338,7 +418,7 @@ export default function EditEstablishmentModal({
                     <ImageIcon className="w-6 h-6 text-gray-300" />
                   )}
                 </div>
-                <div className="relative border border-dashed border-gray-300 hover:border-[#1b3151] p-3 rounded-xl text-center cursor-pointer transition-colors flex-1 flex flex-col justify-center items-center h-16 bg-[#f8f9fa]">
+                <div className="relative border border-dashed border-gray-300 hover:border-[#f7906c] p-3 rounded-xl text-center cursor-pointer transition-colors flex-1 flex flex-col justify-center items-center h-16 bg-[#f8f9fa]">
                   <input
                     type="file"
                     accept="image/*"
@@ -353,14 +433,14 @@ export default function EditEstablishmentModal({
 
             {/* Language dropdown */}
             <div>
-              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2 flex items-center gap-1">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                 <Globe className="w-3.5 h-3.5 text-gray-400" />
                 <span>Primary Language</span>
               </label>
               <select
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] transition-all cursor-pointer font-bold"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#f7906c] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] transition-all cursor-pointer font-bold"
               >
                 {LANGUAGES.map((l) => (
                   <option key={l} value={l}>
@@ -373,12 +453,12 @@ export default function EditEstablishmentModal({
 
           {/* Background banner */}
           <div>
-            <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2">
+            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2">
               Customer View Background Banner
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Image Picker */}
-              <div className="relative border border-dashed border-gray-300 hover:border-[#1b3151] p-4 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-colors h-[100px] bg-[#f8f9fa]">
+              <div className="relative border border-dashed border-gray-300 hover:border-[#f7906c] p-4 rounded-xl flex flex-col items-center justify-center text-center cursor-pointer transition-colors h-[100px] bg-[#f8f9fa]">
                 <input
                   type="file"
                   accept="image/*"
@@ -390,7 +470,7 @@ export default function EditEstablishmentModal({
               </div>
               
               {/* Preview */}
-              <div className="border border-gray-200 rounded-xl h-[100px] bg-gray-50 flex items-center justify-center overflow-hidden relative">
+              <div className="border border-gray-200 rounded-xl h-[100px] bg-gray-50 flex items-center justify-center overflow-hidden relative shadow-inner">
                 {bgPreview ? (
                   <>
                     <img src={bgPreview} alt="Background Preview" className="w-full h-full object-cover" />
@@ -400,29 +480,29 @@ export default function EditEstablishmentModal({
                         setBgPreview(null);
                         setBgFile(null);
                       }}
-                      className="absolute top-1.5 right-1.5 bg-[#1b3151]/80 text-white p-1 rounded-full hover:bg-[#1b3151] transition-colors shadow-sm"
+                      className="absolute top-1.5 right-1.5 bg-[#1b3151]/80 text-white p-1 rounded-full hover:bg-black transition-colors shadow-sm"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </>
                 ) : (
-                  <div className="text-gray-400 text-xs text-center">No banner image selected</div>
+                  <div className="text-gray-400 text-xs text-center font-bold">No banner image</div>
                 )}
               </div>
             </div>
 
             {/* Presets */}
             <div className="mt-3">
-              <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+              <span className="block text-[8px] font-black text-gray-400 uppercase tracking-wider mb-2">
                 Or select wood & brick presets
               </span>
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
                 {BG_PRESETS.map((bg, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => selectBgPreset(bg)}
-                    className="w-12 h-10 rounded overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f2bd11] transition-all"
+                    className="w-12 h-10 rounded-xl overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f7906c] transition-all focus:outline-none"
                   >
                     <img src={bg} alt="bg preset" className="w-full h-full object-cover" />
                   </button>
@@ -435,7 +515,7 @@ export default function EditEstablishmentModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* WiFi */}
             <div>
-              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <Wifi className="w-3.5 h-3.5 text-gray-400" />
                 <span>Wi-Fi Password</span>
               </label>
@@ -444,13 +524,13 @@ export default function EditEstablishmentModal({
                 value={wifiPassword}
                 onChange={(e) => setWifiPassword(e.target.value)}
                 placeholder="e.g. CafeCasteloGuest"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] placeholder:text-gray-400"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#f7906c] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] placeholder:text-gray-400 font-bold"
               />
             </div>
 
             {/* Phone */}
             <div>
-              <label className="block text-xs font-bold text-[#1b3151] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <label className="block text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
                 <Phone className="w-3.5 h-3.5 text-gray-400" />
                 <span>Contact Phone</span>
               </label>
@@ -459,28 +539,28 @@ export default function EditEstablishmentModal({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="e.g. +252 61 5000000"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] placeholder:text-gray-400 font-mono"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#f7906c] focus:outline-none text-sm text-[#1b3151] bg-[#f8f9fa] placeholder:text-gray-400 font-mono font-bold"
               />
             </div>
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-3 mt-4">
+          <div className="flex items-center gap-3 mt-4 border-t border-gray-50 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 border border-gray-200 text-gray-500 hover:bg-gray-50 font-bold rounded-[50px] text-sm transition-colors"
+              className="flex-1 py-3 border border-gray-250 text-gray-400 hover:bg-slate-50 font-bold rounded-full text-xs uppercase tracking-wider transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 bg-[#f2bd11] hover:bg-[#dbab0f] disabled:bg-gray-300 text-[#1b3151] font-bold rounded-[50px] text-sm transition-all shadow-md flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-[#f7906c] hover:bg-[#e27653] disabled:bg-gray-300 text-white font-extrabold rounded-full text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border-0"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin text-[#1b3151]" />
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
                   <span>Saving...</span>
                 </>
               ) : (

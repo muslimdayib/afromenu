@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { X, Sparkles, AlertCircle, RefreshCw } from "lucide-react";
+import { X, Sparkles, AlertCircle, RefreshCw, Sliders } from "lucide-react";
 import { Item } from "@/lib/supabase";
 
 // Register custom HTML elements for TypeScript compilation safety
@@ -201,6 +201,44 @@ export default function ItemDetailModal({
               {cleanDescription || "Crafted freshly with signature herbs and the finest hand-selected local ingredients."}
             </p>
           </div>
+
+          {/* Add-ons & Options customizations */}
+          {item.addons && (
+            <div>
+              <h4 className="text-[10px] font-bold text-[#1b3151] uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-[#f2bd11]" />
+                <span>Customization & Add-ons</span>
+              </h4>
+              <div className="flex flex-col gap-3">
+                {(() => {
+                  try {
+                    const groups = typeof item.addons === "string" ? JSON.parse(item.addons) : item.addons;
+                    if (!Array.isArray(groups) || groups.length === 0) return <span className="text-xs text-gray-400 italic">No add-ons available</span>;
+                    return groups.map((g: any, gIdx: number) => (
+                      <div key={gIdx} className="bg-white border border-gray-200 p-3.5 rounded-2xl shadow-sm">
+                        <h5 className="font-extrabold text-xs text-[#1b3151] mb-2 flex justify-between">
+                          <span>{g.name}</span>
+                          {g.mandatory && <span className="text-[8px] text-[#f7906c] font-black uppercase">Required</span>}
+                        </h5>
+                        <div className="flex flex-col gap-2">
+                          {g.options?.map((opt: any, oIdx: number) => (
+                            <div key={oIdx} className="flex justify-between items-center text-xs">
+                              <span className="text-gray-500 font-medium">{opt.name}</span>
+                              <span className="font-bold text-[#1b3151]">
+                                +{currencySymbol}{Number(opt.price).toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  } catch (e) {
+                    return null;
+                  }
+                })()}
+              </div>
+            </div>
+          )}
 
           {/* Macro Nutrient Stats (If parsed from description or general placeholder) */}
           <div>

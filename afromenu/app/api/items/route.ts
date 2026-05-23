@@ -18,6 +18,14 @@ export async function POST(req: Request) {
       isAvailable,
       tags,
       sortOrder,
+      addons,
+      scheduledPrice,
+      scheduledStart,
+      scheduledEnd,
+      weight,
+      oldPrice,
+      variants,
+      isVisible,
     } = body;
 
     if (id) {
@@ -30,6 +38,36 @@ export async function POST(req: Request) {
       if (isAvailable !== undefined) updateData.isAvailable = isAvailable;
       if (tags !== undefined) updateData.tags = tags;
       if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
+      
+      // Save addons JSON (serialize if string, or keep as is)
+      if (addons !== undefined) {
+        updateData.addons = typeof addons === "string" ? JSON.parse(addons) : addons;
+      }
+      
+      // Save scheduled pricing fields
+      if (scheduledPrice !== undefined) {
+        updateData.scheduledPrice = scheduledPrice === null ? null : parseFloat(scheduledPrice);
+      }
+      if (scheduledStart !== undefined) {
+        updateData.scheduledStart = scheduledStart === null ? null : new Date(scheduledStart);
+      }
+      if (scheduledEnd !== undefined) {
+        updateData.scheduledEnd = scheduledEnd === null ? null : new Date(scheduledEnd);
+      }
+
+      // Save custom fields
+      if (isVisible !== undefined) {
+        updateData.isVisible = isVisible;
+      }
+      if (weight !== undefined) {
+        updateData.weight = weight || null;
+      }
+      if (oldPrice !== undefined) {
+        updateData.oldPrice = oldPrice === null ? null : parseFloat(oldPrice);
+      }
+      if (variants !== undefined) {
+        updateData.variants = typeof variants === "string" ? JSON.parse(variants) : variants;
+      }
 
       const item = await prisma.item.update({
         where: { id },
@@ -61,6 +99,14 @@ export async function POST(req: Request) {
           isAvailable: isAvailable !== undefined ? isAvailable : true,
           tags: tags || [],
           sortOrder: sortOrder || 0,
+          addons: addons !== undefined ? (typeof addons === "string" ? JSON.parse(addons) : addons) : [],
+          scheduledPrice: scheduledPrice !== undefined && scheduledPrice !== null ? parseFloat(scheduledPrice) : null,
+          scheduledStart: scheduledStart !== undefined && scheduledStart !== null ? new Date(scheduledStart) : null,
+          scheduledEnd: scheduledEnd !== undefined && scheduledEnd !== null ? new Date(scheduledEnd) : null,
+          isVisible: isVisible !== undefined ? isVisible : true,
+          weight: weight || null,
+          oldPrice: oldPrice !== undefined && oldPrice !== null ? parseFloat(oldPrice) : null,
+          variants: variants !== undefined ? (typeof variants === "string" ? JSON.parse(variants) : variants) : [],
         },
       });
       console.log("Item created successfully:", item);

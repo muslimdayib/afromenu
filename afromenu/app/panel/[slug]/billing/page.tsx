@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import BottomNav from "@/components/BottomNav";
 import EditEstablishmentModal from "@/components/EditEstablishmentModal";
+import AccountSettingsModal from "@/components/AccountSettingsModal";
 import { CreditCard, Calendar, ShieldCheck, ArrowRight, ArrowLeft, History, Coins, Loader2 } from "lucide-react";
 
 function BillingContent() {
@@ -16,6 +17,7 @@ function BillingContent() {
   const [establishment, setEstablishment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEstModalOpen, setIsEstModalOpen] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [planOption, setPlanOption] = useState("6month");
   const [updating, setUpdating] = useState(false);
 
@@ -216,6 +218,7 @@ function BillingContent() {
         slug={slug}
         activeTab="more"
         onOpenEditEstablishment={() => setIsEstModalOpen(true)}
+        onOpenAccountSettings={() => setIsAccountModalOpen(true)}
       />
 
       {/* Branding Edit Modal */}
@@ -224,6 +227,11 @@ function BillingContent() {
         onClose={() => setIsEstModalOpen(false)}
         onSuccess={fetchEstablishment}
         establishment={establishment}
+      />
+
+      <AccountSettingsModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
       />
     </div>
   );

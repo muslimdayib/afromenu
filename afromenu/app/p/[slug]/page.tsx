@@ -9,6 +9,7 @@ import BottomNav from "@/components/BottomNav";
 import AddCategoryModal from "@/components/AddCategoryModal";
 import AddItemModal from "@/components/AddItemModal";
 import EditEstablishmentModal from "@/components/EditEstablishmentModal";
+import AccountSettingsModal from "@/components/AccountSettingsModal";
 import TemplateMinimalist from "@/components/TemplateMinimalist";
 import TemplateVisualGrid from "@/components/TemplateVisualGrid";
 import TemplateClassic from "@/components/TemplateClassic";
@@ -19,6 +20,7 @@ import {
   Plus,
   ArrowUp,
   ArrowDown,
+  ArrowLeft,
   Edit2,
   Trash2,
   Wifi,
@@ -60,6 +62,7 @@ export default function HybridMenuPage() {
   const [targetCategoryIdForItem, setTargetCategoryIdForItem] = useState<string>("");
 
   const [isEstModalOpen, setIsEstModalOpen] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
   // V3 Detail modal states
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -68,8 +71,40 @@ export default function HybridMenuPage() {
   // Search query for real-time filtering in the redesigned editor
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Currently active section pill (e.g. Food, Drinks)
+  // Section and tab states
+  const [localSections, setLocalSections] = useState<string[]>([]);
+  const dbSections = Array.from(new Set(categories.map(c => c.section_name || c.sectionName || null).filter(Boolean))) as string[];
+  const allSections = Array.from(new Set([...dbSections, ...localSections]));
+
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [guestSelectedSection, setGuestSelectedSection] = useState<string | null>(null);
+  const guestSections = Array.from(new Set(categories.map(c => c.section_name || c.sectionName || null).filter(Boolean))) as string[];
+  const displayedGuestCategories = guestSections.length > 0 && guestSelectedSection
+    ? categories.filter(c => (c.section_name || c.sectionName) === guestSelectedSection)
+    : categories;
+
+  useEffect(() => {
+    if (allSections.length > 0 && !selectedSection) {
+      setSelectedSection(allSections[0]);
+    }
+  }, [allSections, selectedSection]);
+
+  useEffect(() => {
+    if (guestSections.length > 0 && !guestSelectedSection) {
+      setGuestSelectedSection(guestSections[0]);
+    }
+  }, [guestSections, guestSelectedSection]);
+
+  const handleAddSection = () => {
+    const name = prompt("Enter new section name (e.g. Food, Drinks, Desserts):");
+    if (name && name.trim()) {
+      const trimmed = name.trim();
+      if (!allSections.includes(trimmed)) {
+        setLocalSections([...localSections, trimmed]);
+      }
+      setSelectedSection(trimmed);
+    }
+  };
 
   // Fetch all menu items
   const fetchMenuData = async () => {
@@ -248,8 +283,13 @@ export default function HybridMenuPage() {
      1. OWNER MODE LAYOUT (Edit Dashboard)
      ========================================================================= */
   if (isOwner) {
-    // Filter categories & items dynamically using real-time search query
+    // Filter categories & items dynamically using active section pill and real-time search query
     const filteredCategories = categories.filter((cat) => {
+      // If sections exist, filter categories by the selected section pill
+      if (allSections.length > 0 && selectedSection) {
+        if ((cat.section_name || cat.sectionName) !== selectedSection) return false;
+      }
+
       if (!searchQuery) return true;
       const query = searchQuery.toLowerCase();
       const matchesCatName = cat.name.toLowerCase().includes(query);
@@ -339,45 +379,36 @@ export default function HybridMenuPage() {
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Sections Pills</span>
               <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
                 
-                {/* Plus button before pills */}
+                {/* Plus button to add a section */}
                 <button
-                  onClick={() => {
-                    setCategoryToEdit(null);
-                    setIsCatModalOpen(true);
-                  }}
+                  onClick={handleAddSection}
                   className="w-8 h-8 rounded-full bg-[#fdf6f2] hover:bg-[#f7906c] text-[#f7906c] hover:text-white flex items-center justify-center shadow-sm flex-shrink-0 transition-all font-black border border-orange-100"
+                  title="Add Section Pill"
                 >
                   +
                 </button>
 
-                {/* Categories Pills */}
-                {categories.map((cat) => {
-                  const isSelected = expandedCategoryId === cat.id;
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => setExpandedCategoryId(isSelected ? null : cat.id)}
-                      className={`px-4 py-2 text-xs font-bold rounded-full transition-all flex-shrink-0 flex items-center gap-1.5 shadow-sm border ${
-                        isSelected
-                          ? "bg-[#f7906c] border-[#f7906c] text-white font-extrabold"
-                          : "bg-white border-[#eeeeee] text-[#2d2d2d] hover:bg-[#fdf6f2]"
-                      }`}
-                    >
-                      <span>{cat.name}</span>
-                    </button>
-                  );
-                })}
-
-                {/* Plus button after last pill */}
-                <button
-                  onClick={() => {
-                    setCategoryToEdit(null);
-                    setIsCatModalOpen(true);
-                  }}
-                  className="w-8 h-8 rounded-full bg-[#fdf6f2] hover:bg-[#f7906c] text-[#f7906c] hover:text-white flex items-center justify-center shadow-sm flex-shrink-0 transition-all font-black border border-orange-100"
-                >
-                  +
-                </button>
+                {/* Sections/Tabs */}
+                {allSections.length === 0 ? (
+                  <span className="text-xs text-gray-400 italic">No sections created yet. Tap + to add.</span>
+                ) : (
+                  allSections.map((sec) => {
+                    const isSelected = selectedSection === sec;
+                    return (
+                      <button
+                        key={sec}
+                        onClick={() => setSelectedSection(sec)}
+                        className={`px-4 py-2 text-xs font-bold rounded-full transition-all flex-shrink-0 flex items-center gap-1.5 shadow-sm border ${
+                          isSelected
+                            ? "bg-[#f7906c] border-[#f7906c] text-white font-extrabold"
+                            : "bg-white border-[#eeeeee] text-[#2d2d2d] hover:bg-[#fdf6f2]"
+                        }`}
+                      >
+                        <span>{sec}</span>
+                      </button>
+                    );
+                  })
+                )}
               </div>
 
               {/* Operations Below Active/Selected Pill */}
@@ -470,201 +501,198 @@ export default function HybridMenuPage() {
             </button>
           </section>
 
-          {/* CATEGORY CARDS */}
-          <section className="flex flex-col gap-5">
-            {filteredCategories.length === 0 ? (
-              <div className="p-10 text-center bg-white border border-orange-50 rounded-[32px] shadow-sm text-gray-400 flex flex-col items-center">
-                <Utensils className="w-10 h-10 mb-2 text-gray-300" />
-                <p className="text-xs font-semibold">No active categories found.</p>
-              </div>
-            ) : (
-              filteredCategories.map((cat, idx) => {
-                const isExpanded = expandedCategoryId === cat.id;
-                const catItems = items.filter((i) => i.category_id === cat.id);
+          {/* CATEGORY CARDS or CATEGORY ITEMS DRILLDOWN PANEL */}
+          {expandedCategoryId ? (
+            (() => {
+              const cat = categories.find((c) => c.id === expandedCategoryId);
+              if (!cat) return null;
+              const catItems = items.filter((i) => i.category_id === cat.id);
 
-                return (
-                  <div key={cat.id} className="flex flex-col gap-3">
-                    
-                    {/* Category Card (Full Bleed, height 160px) */}
-                    <div
-                      className="h-[160px] rounded-[16px] overflow-hidden border border-orange-100/50 relative shadow-md cursor-pointer transition-all hover:shadow-lg transform active:scale-[0.99]"
-                      onClick={() => setExpandedCategoryId(isExpanded ? null : cat.id)}
-                      style={{
-                        backgroundImage: cat.image_url ? `url(${cat.image_url})` : "none",
-                        backgroundColor: "#1b3151",
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }}
+              return (
+                <div className="bg-white p-5 rounded-[24px] border border-orange-50 shadow-md flex flex-col gap-5 animate-slide-up">
+                  {/* Header row */}
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <button
+                      onClick={() => setExpandedCategoryId(null)}
+                      className="flex items-center gap-1 text-xs font-black text-[#f7906c] hover:underline"
                     >
-                      {/* Dark Overlay */}
-                      <div className="absolute inset-0 bg-black/55 z-0"></div>
+                      <ArrowLeft className="w-4 h-4" />
+                      <span>Back to Sections</span>
+                    </button>
+                    <h3 className="font-heading font-black text-sm text-[#2d2d2d] uppercase truncate max-w-[150px]">
+                      {cat.name}
+                    </h3>
+                  </div>
 
-                      {/* Top Right Action Icons */}
-                      <div
-                        className="absolute top-4 right-4 flex items-center gap-1.5 z-10"
-                        onClick={(e) => e.stopPropagation()} // Bypasses card click expansion
-                      >
-                        {/* Down Arrow / Expand */}
-                        <button
-                          onClick={() => setExpandedCategoryId(isExpanded ? null : cat.id)}
-                          className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all"
-                        >
-                          <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
-                        </button>
-                        
-                        {/* Edit Pencil */}
-                        <button
-                          onClick={() => {
-                            setCategoryToEdit(cat);
-                            setIsCatModalOpen(true);
-                          }}
-                          className="w-7 h-7 rounded-full bg-[#f7906c] hover:bg-[#e27653] text-white flex items-center justify-center transition-all shadow-md"
-                          title="Edit Category Name & Photo"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
+                  {/* Add dish inside category */}
+                  <button
+                    onClick={() => {
+                      setItemToEdit(null);
+                      setTargetCategoryIdForItem(cat.id);
+                      setIsItemModalOpen(true);
+                    }}
+                    className="w-full py-3 bg-[#f7906c] hover:bg-[#e27653] text-white font-extrabold rounded-[50px] shadow-sm transition-all flex items-center justify-center gap-2 text-xs cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 text-white" />
+                    <span>Add Item to {cat.name}</span>
+                  </button>
 
-                        {/* Trash Delete */}
-                        <button
-                          onClick={() => handleDeleteCategory(cat.id)}
-                          className="w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all shadow-md"
-                          title="Delete Category"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Centered Name */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center px-6 z-0 text-center select-none">
-                        <h3 className="font-heading font-extrabold text-xl text-white uppercase tracking-wider drop-shadow-md">
-                          {cat.name}
-                        </h3>
-                        <span className="text-[9px] text-white/95 font-black mt-1 bg-white/10 px-3 py-0.5 rounded-full uppercase tracking-wider">
-                          {catItems.length} Dishes
-                        </span>
-                      </div>
+                  {/* Items List */}
+                  {catItems.length === 0 ? (
+                    <div className="text-center py-10 text-xs text-gray-400 italic bg-gray-50 rounded-2xl border border-dashed border-gray-150">
+                      No items inside this category. Click &apos;Add Item&apos; above.
                     </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {catItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className={`p-3 rounded-2xl bg-[#fdf6f2]/40 border border-orange-50/50 shadow-xs flex items-center justify-between gap-3 ${
+                            !item.is_available ? "opacity-60 bg-gray-50/50" : ""
+                          }`}
+                        >
+                          {/* Item cover photo & info */}
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center relative shadow-sm">
+                              {item.image_url ? (
+                                <img
+                                  src={item.image_url}
+                                  alt={item.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Utensils className="w-5 h-5 text-gray-300" />
+                              )}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <h5 className="font-extrabold text-xs text-[#2d2d2d]">{item.name}</h5>
+                                {item.weight && (
+                                  <span className="text-[9px] font-bold text-gray-400 font-mono">({item.weight})</span>
+                                )}
+                                {!item.is_available && (
+                                  <span className="text-[7px] font-black uppercase px-1 py-0.5 rounded bg-gray-200 text-gray-600">
+                                    Unavailable
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[9px] text-gray-400 line-clamp-1 max-w-[160px] mt-0.5">
+                                {item.description || "No recipe description set."}
+                              </p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs font-black text-[#f7906c]">
+                                  {establishment.currency_symbol || "$"}
+                                  {Number(item.price || 0).toFixed(2)}
+                                </span>
+                                {item.old_price && (
+                                  <span className="text-[10px] text-gray-400 line-through">
+                                    {establishment.currency_symbol || "$"}
+                                    {Number(item.old_price).toFixed(2)}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
 
-                    {/* Accordion Dishes Sub-List (White premium background card) */}
-                    {isExpanded && (
-                      <div className="p-4 bg-white border border-[#eeeeee] rounded-[24px] shadow-lg animate-slide-up flex flex-col gap-3 mx-1">
-                        <div className="flex items-center justify-between border-b border-gray-50 pb-2.5 mb-1">
-                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                            Category Dishes
-                          </span>
-                          
-                          {/* Add Item Button inside expanded category */}
+                          {/* Item Edit & Delete Controls */}
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                setItemToEdit(item);
+                                setTargetCategoryIdForItem(cat.id);
+                                setIsItemModalOpen(true);
+                              }}
+                              className="w-8 h-8 rounded-full hover:bg-[#f7906c]/10 flex items-center justify-center text-gray-400 hover:text-[#f7906c] transition-colors cursor-pointer"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="w-8 h-8 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()
+          ) : (
+            /* OTHERWISE RENDER CATEGORY LIST AS CARDS */
+            <section className="flex flex-col gap-5">
+              {filteredCategories.length === 0 ? (
+                <div className="p-10 text-center bg-white border border-orange-50 rounded-[32px] shadow-sm text-gray-400 flex flex-col items-center">
+                  <Utensils className="w-10 h-10 mb-2 text-gray-300" />
+                  <p className="text-xs font-semibold">No active categories found.</p>
+                </div>
+              ) : (
+                filteredCategories.map((cat) => {
+                  const catItems = items.filter((i) => i.category_id === cat.id);
+
+                  return (
+                    <div key={cat.id} className="flex flex-col gap-3">
+                      
+                      {/* Category Card */}
+                      <div
+                        className="h-[160px] rounded-[16px] overflow-hidden border border-orange-100/50 relative shadow-md cursor-pointer transition-all hover:shadow-lg transform active:scale-[0.99]"
+                        onClick={() => setExpandedCategoryId(cat.id)}
+                        style={{
+                          backgroundImage: cat.image_url ? `url(${cat.image_url})` : "none",
+                          backgroundColor: "#1b3151",
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }}
+                      >
+                        {/* Dark Overlay */}
+                        <div className="absolute inset-0 bg-black/55 z-0"></div>
+
+                        {/* Top Right Action Icons */}
+                        <div
+                          className="absolute top-4 right-4 flex items-center gap-1.5 z-10"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {/* Edit Pencil */}
                           <button
                             onClick={() => {
-                              setItemToEdit(null);
-                              setTargetCategoryIdForItem(cat.id);
-                              setIsItemModalOpen(true);
+                              setCategoryToEdit(cat);
+                              setIsCatModalOpen(true);
                             }}
-                            className="px-3.5 py-1.5 bg-[#f7906c] text-white font-extrabold text-[10px] rounded-full hover:bg-[#e27653] transition-all flex items-center gap-1 shadow-sm"
+                            className="w-7 h-7 rounded-full bg-[#f7906c] hover:bg-[#e27653] text-white flex items-center justify-center transition-all shadow-md cursor-pointer"
+                            title="Edit Category Name & Photo"
                           >
-                            <Plus className="w-3.5 h-3.5 text-white" />
-                            <span>Add Dish</span>
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {/* Trash Delete */}
+                          <button
+                            onClick={() => handleDeleteCategory(cat.id)}
+                            className="w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all shadow-md cursor-pointer"
+                            title="Delete Category"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
 
-                        {catItems.length === 0 ? (
-                          <div className="text-center py-6 text-xs text-gray-400 italic">
-                            This category is empty. Tap &apos;Add Dish&apos; to populate it.
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-3">
-                            {catItems.map((item) => (
-                              <div
-                                key={item.id}
-                                className={`p-3 rounded-2xl bg-[#fdf6f2]/40 border border-orange-50/50 shadow-sm flex items-center justify-between gap-3 ${
-                                  !item.is_available ? "opacity-60 bg-gray-50/50" : ""
-                                }`}
-                              >
-                                {/* Left Item Image & Details */}
-                                <div className="flex items-center gap-3">
-                                  <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center relative shadow-sm">
-                                    {item.image_url ? (
-                                      <img
-                                        src={item.image_url}
-                                        alt={item.name}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <Utensils className="w-5 h-5 text-gray-300" />
-                                    )}
-                                  </div>
-                                  <div>
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <h5 className="font-extrabold text-xs text-[#2d2d2d]">{item.name}</h5>
-                                      {!item.is_available && (
-                                        <span className="text-[7px] font-black uppercase px-1 py-0.5 rounded bg-gray-200 text-gray-600">
-                                          Unavailable
-                                        </span>
-                                      )}
-                                      {item.tags?.map((t: string) => (
-                                        <span
-                                          key={t}
-                                          className="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-[#f7906c]/10 text-[#f7906c]"
-                                        >
-                                          {t}
-                                        </span>
-                                      ))}
-                                    </div>
-                                    <p className="text-[9px] text-gray-400 line-clamp-1 max-w-[160px] mt-0.5">
-                                      {item.description || "No recipe description set."}
-                                    </p>
-                                    <span className="text-[11px] font-black text-[#f7906c] block mt-0.5">
-                                      {establishment.currency_symbol || "$"}
-                                      {Number(item.price).toFixed(2)}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Right Controls */}
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    onClick={() => {
-                                      setItemToEdit(item);
-                                      setTargetCategoryIdForItem(cat.id);
-                                      setIsItemModalOpen(true);
-                                    }}
-                                    className="w-7 h-7 rounded-full hover:bg-[#f7906c]/10 flex items-center justify-center text-gray-400 hover:text-[#f7906c] transition-colors"
-                                  >
-                                    <Edit2 className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteItem(item.id)}
-                                    className="w-7 h-7 rounded-full hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        {/* Centered Name */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center px-6 z-0 text-center select-none">
+                          <h3 className="font-heading font-extrabold text-xl text-white uppercase tracking-wider drop-shadow-md">
+                            {cat.name}
+                          </h3>
+                          <span className="text-[9px] text-white/95 font-black mt-1 bg-white/10 px-3 py-0.5 rounded-full uppercase tracking-wider">
+                            {catItems.length} Dishes
+                          </span>
+                        </div>
                       </div>
-                    )}
 
-                    {/* Between Cards coral '+' Insert Button */}
-                    <div className="flex items-center justify-center relative z-10 -my-1">
-                      <button
-                        onClick={() => {
-                          setCategoryToEdit(null);
-                          setIsCatModalOpen(true);
-                        }}
-                        className="w-8 h-8 rounded-full bg-[#f7906c] hover:bg-[#e27653] text-white shadow-md flex items-center justify-center transition-all hover:scale-110"
-                        title="Insert Section Category"
-                      >
-                        <Plus className="w-4 h-4 text-white" />
-                      </button>
                     </div>
-
-                  </div>
-                );
-              })
-            )}
-          </section>
+                  );
+                })
+              )}
+            </section>
+          )}
 
         </main>
 
@@ -673,6 +701,7 @@ export default function HybridMenuPage() {
           slug={slug}
           activeTab="edit"
           onOpenEditEstablishment={() => setIsEstModalOpen(true)}
+          onOpenAccountSettings={() => setIsAccountModalOpen(true)}
         />
 
         {/* MODAL WRAPPERS */}
@@ -686,6 +715,7 @@ export default function HybridMenuPage() {
           establishmentId={establishment.id}
           categoryToEdit={categoryToEdit}
           nextSortOrder={categories.length}
+          defaultSectionName={selectedSection}
         />
 
         <AddItemModal
@@ -698,6 +728,7 @@ export default function HybridMenuPage() {
           categoryId={targetCategoryIdForItem}
           itemToEdit={itemToEdit}
           nextSortOrder={items.filter((i) => i.category_id === targetCategoryIdForItem).length}
+          allItems={items}
         />
 
         <EditEstablishmentModal
@@ -705,6 +736,11 @@ export default function HybridMenuPage() {
           onClose={() => setIsEstModalOpen(false)}
           onSuccess={fetchMenuData}
           establishment={establishment}
+        />
+
+        <AccountSettingsModal
+          isOpen={isAccountModalOpen}
+          onClose={() => setIsAccountModalOpen(false)}
         />
       </div>
     );
@@ -714,12 +750,17 @@ export default function HybridMenuPage() {
      2. GUEST / CUSTOMER MENU VIEW (Public digital menu)
      ========================================================================= */
   const isDark = establishment.theme === "dark";
+  const brandColor = establishment.brand_color || establishment.brandColor || "#f7906c";
+  const brandStyles = {
+    "--brand-color": brandColor,
+    accentColor: brandColor,
+  } as React.CSSProperties;
 
   return (
     <div
       style={brandStyles}
       className={`min-h-screen ${
-        isDark ? "bg-[#121212] text-[#f5f5f5]" : "bg-[#f8f9fa] text-[#1b3151]"
+        isDark ? "bg-[#121212] text-white" : "bg-[#fdf6f2] text-[#2d2d2d]"
       } pb-16 transition-colors duration-300`}
     >
       {/* Dynamic Background Banner banner */}
@@ -790,66 +831,207 @@ export default function HybridMenuPage() {
         </div>
       </div>
 
-      {/* Guest Menu Categories Accordions Loop replaced by Dynamic Template Switcher */}
-      <div className="max-w-[430px] mx-auto px-4 flex flex-col gap-4">
-        {categories.length === 0 ? (
+      {/* Guest Section Pills */}
+      {guestSections.length > 0 && (
+        <div className="max-w-[430px] mx-auto px-4 mb-4">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            {guestSections.map((sec) => {
+              const isSelected = guestSelectedSection === sec;
+              return (
+                <button
+                  key={sec}
+                  onClick={() => setGuestSelectedSection(sec)}
+                  className={`px-4 py-2 text-xs font-black rounded-full transition-all shadow-sm border ${
+                    isSelected
+                      ? "bg-[#f2bd11] border-[#f2bd11] text-[#1b3151]"
+                      : isDark
+                        ? "bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700"
+                        : "bg-white border-gray-200 text-slate-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {sec}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Guest Menu Categories Loop */}
+      <div className="max-w-[430px] mx-auto px-4 flex flex-col gap-6">
+        {displayedGuestCategories.length === 0 ? (
           <div className={`p-8 text-center rounded-3xl ${isDark ? "bg-[#1e1e1e]" : "bg-white"} my-8`}>
-            <p className="text-sm text-slate-400">No dishes on the menu yet.</p>
+            <p className="text-sm text-slate-400">No dishes in this section yet.</p>
           </div>
         ) : (
-          <>
-            {establishment.template_style === "visual-grid" || establishment.template_style === "bold-grid" ? (
-              <TemplateVisualGrid
-                establishment={establishment}
-                categories={categories}
-                items={items}
-                onItemClick={(item) => {
-                  setSelectedItemForDetail(item);
-                  setIsDetailModalOpen(true);
-                }}
-              />
-            ) : establishment.template_style === "classic-elegant" || establishment.template_style === "classic-list" ? (
-              <TemplateClassic
-                establishment={establishment}
-                categories={categories}
-                items={items}
-                onItemClick={(item) => {
-                  setSelectedItemForDetail(item);
-                  setIsDetailModalOpen(true);
-                }}
-              />
-            ) : establishment.template_style === "night-owl" ? (
-              <TemplateNightOwl
-                establishment={establishment}
-                categories={categories}
-                items={items}
-                onItemClick={(item) => {
-                  setSelectedItemForDetail(item);
-                  setIsDetailModalOpen(true);
-                }}
-              />
-            ) : establishment.template_style === "fast-casual" ? (
-              <TemplateFastCasual
-                establishment={establishment}
-                categories={categories}
-                items={items}
-                onItemClick={(item) => {
-                  setSelectedItemForDetail(item);
-                  setIsDetailModalOpen(true);
-                }}
-              />
-            ) : (
-              <TemplateMinimalist
-                establishment={establishment}
-                categories={categories}
-                items={items}
-                onItemClick={(item) => {
-                  setSelectedItemForDetail(item);
-                  setIsDetailModalOpen(true);
-                }}
-              />
-            )}
-          </>
+          displayedGuestCategories.map((category) => {
+            const categoryItems = items.filter((item) => item.category_id === category.id && (item.is_visible !== false));
+
+            return (
+              <div key={category.id} className="flex flex-col gap-4">
+                {/* Category Header */}
+                <h4 className="font-heading font-black text-sm uppercase tracking-wider border-b pb-2 border-orange-100/50 mt-2">
+                  {category.name}
+                </h4>
+
+                {/* Layout styles */}
+                {categoryItems.length === 0 ? (
+                  <p className="text-[10px] text-gray-400 italic">No available dishes in this category.</p>
+                ) : establishment.menu_style === "visual-grid" ? (
+                  /* 2-column Grid style */
+                  <div className="grid grid-cols-2 gap-4">
+                    {categoryItems.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => {
+                          setSelectedItemForDetail(item);
+                          setIsDetailModalOpen(true);
+                        }}
+                        className={`rounded-2xl overflow-hidden p-3 border shadow-sm transition-all active:scale-[0.99] flex flex-col justify-between h-[210px] cursor-pointer ${
+                          isDark ? "bg-[#1e1e1e] border-zinc-800" : "bg-white border-[#eeeeee]"
+                        }`}
+                      >
+                        <div>
+                          {/* Image */}
+                          <div className="h-24 w-full rounded-xl overflow-hidden bg-slate-50 relative shadow-inner mb-2 flex items-center justify-center flex-shrink-0">
+                            {item.image_url ? (
+                              <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <Utensils className="w-6 h-6 text-gray-300" />
+                            )}
+                          </div>
+                          {/* Title & Weight */}
+                          <h5 className="font-black text-xs truncate leading-snug">
+                            {item.name}
+                            {item.weight && <span className="text-[9px] font-bold text-gray-400 font-mono ml-1">({item.weight})</span>}
+                          </h5>
+                          {/* Description */}
+                          <p className="text-[9px] text-gray-450 line-clamp-1 mt-0.5 leading-normal">
+                            {item.description || "Fresh and delicious recipe details."}
+                          </p>
+                        </div>
+                        {/* Price Row */}
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <span className="text-xs font-black text-[#f7906c]">
+                            {establishment.currency_symbol || "$"}
+                            {Number(item.price || 0).toFixed(2)}
+                          </span>
+                          {item.old_price && (
+                            <span className="text-[9px] text-gray-400 line-through">
+                              {establishment.currency_symbol || "$"}
+                              {Number(item.old_price).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : establishment.menu_style === "photo-cards" ? (
+                  /* Full-width Photo Cards with text overlay style */
+                  <div className="flex flex-col gap-4">
+                    {categoryItems.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => {
+                          setSelectedItemForDetail(item);
+                          setIsDetailModalOpen(true);
+                        }}
+                        className={`h-[160px] rounded-2xl overflow-hidden relative shadow-md cursor-pointer transition-all active:scale-[0.99] transform`}
+                        style={{
+                          backgroundImage: item.image_url ? `url(${item.image_url})` : "none",
+                          backgroundColor: "#1b3151",
+                          backgroundSize: "cover",
+                          backgroundPosition: "center",
+                        }}
+                      >
+                        {/* Dark Overlay */}
+                        <div className="absolute inset-0 bg-black/55 z-0 transition-opacity hover:bg-black/60"></div>
+                        
+                        {/* Text Overlay Details */}
+                        <div className="absolute inset-0 flex flex-col justify-between p-4 z-10 text-white select-none">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h5 className="font-heading font-extrabold text-sm uppercase tracking-wide truncate max-w-[280px]">
+                                {item.name}
+                                {item.weight && <span className="text-[10px] font-mono opacity-80 ml-1">({item.weight})</span>}
+                              </h5>
+                              <p className="text-[9px] text-white/70 line-clamp-2 leading-relaxed mt-1 max-w-[280px]">
+                                {item.description || "Gourmet dish details crafted fresh today."}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Bottom price tags */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-black text-[#f7906c] drop-shadow-sm">
+                              {establishment.currency_symbol || "$"}
+                              {Number(item.price || 0).toFixed(2)}
+                            </span>
+                            {item.old_price && (
+                              <span className="text-[10px] text-white/50 line-through">
+                                {establishment.currency_symbol || "$"}
+                                {Number(item.old_price).toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  /* Classic List (Default style) */
+                  <div className="flex flex-col gap-3">
+                    {categoryItems.map((item) => (
+                      <div
+                        key={item.id}
+                        onClick={() => {
+                          setSelectedItemForDetail(item);
+                          setIsDetailModalOpen(true);
+                        }}
+                        className={`p-3.5 rounded-2xl border shadow-xs transition-all active:scale-[0.99] flex items-center justify-between gap-4 cursor-pointer ${
+                          isDark ? "bg-[#1e1e1e] border-zinc-800/80" : "bg-white border-[#eeeeee]/60"
+                        }`}
+                      >
+                        {/* Left Info and small thumbnail */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-xl bg-slate-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center relative shadow-inner">
+                            {item.image_url ? (
+                              <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <Utensils className="w-5 h-5 text-gray-300" />
+                            )}
+                          </div>
+                          <div>
+                            <h5 className="font-extrabold text-xs">
+                              {item.name}
+                              {item.weight && <span className="text-[9px] font-bold text-gray-400 font-mono ml-1">({item.weight})</span>}
+                            </h5>
+                            <p className="text-[9px] text-gray-450 line-clamp-1 leading-normal mt-0.5 max-w-[200px]">
+                              {item.description || "Gourmet chef crafted specialty."}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Right Price details */}
+                        <div className="text-right flex flex-col items-end flex-shrink-0">
+                          <span className="text-xs font-black text-[#f7906c]">
+                            {establishment.currency_symbol || "$"}
+                            {Number(item.price || 0).toFixed(2)}
+                          </span>
+                          {item.old_price && (
+                            <span className="text-[9px] text-gray-400 line-through">
+                              {establishment.currency_symbol || "$"}
+                              {Number(item.old_price).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 

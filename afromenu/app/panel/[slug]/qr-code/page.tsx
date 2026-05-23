@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import BottomNav from "@/components/BottomNav";
 import EditEstablishmentModal from "@/components/EditEstablishmentModal";
+import AccountSettingsModal from "@/components/AccountSettingsModal";
 import {
   Utensils,
   Download,
@@ -31,6 +32,7 @@ function QRCodeContent() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [isEstModalOpen, setIsEstModalOpen] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [standDataUrl, setStandDataUrl] = useState<string | null>(null);
   const [qrOnlyDataUrl, setQrOnlyDataUrl] = useState<string | null>(null);
   const [renderingStand, setRenderingStand] = useState(false);
@@ -509,6 +511,7 @@ function QRCodeContent() {
         slug={slug}
         activeTab="qr"
         onOpenEditEstablishment={() => setIsEstModalOpen(true)}
+        onOpenAccountSettings={() => setIsAccountModalOpen(true)}
       />
 
       {/* Establishment Branding modal */}
@@ -517,6 +520,11 @@ function QRCodeContent() {
         onClose={() => setIsEstModalOpen(false)}
         onSuccess={fetchEstablishment}
         establishment={establishment}
+      />
+
+      <AccountSettingsModal
+        isOpen={isAccountModalOpen}
+        onClose={() => setIsAccountModalOpen(false)}
       />
     </div>
   );

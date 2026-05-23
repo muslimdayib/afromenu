@@ -72,6 +72,7 @@ export async function GET(
       paid_until: establishment.paidUntil.toISOString(),
       created_at: establishment.createdAt.toISOString(),
       theme: establishment.theme,
+      menu_style: establishment.menuStyle,
     };
 
     const mappedCategories = categories.map((cat) => ({
@@ -85,18 +86,43 @@ export async function GET(
       created_at: cat.createdAt.toISOString(),
     }));
 
-    const mappedItems = items.map((item) => ({
-      id: item.id,
-      category_id: item.categoryId,
-      name: item.name,
-      description: item.description,
-      price: Number(item.price), // Convert Decimal to normal float number
-      image_url: item.imageUrl,
-      is_available: item.isAvailable,
-      sort_order: item.sortOrder,
-      tags: item.tags || [],
-      created_at: item.createdAt.toISOString(),
-    }));
+    const mappedItems = items.map((item) => {
+      // Determine if a scheduled price is active
+      let finalPrice = Number(item.price);
+      const now = new Date();
+      if (
+        item.scheduledPrice !== null &&
+        item.scheduledPrice !== undefined &&
+        item.scheduledStart &&
+        item.scheduledEnd &&
+        now >= new Date(item.scheduledStart) &&
+        now <= new Date(item.scheduledEnd)
+      ) {
+        finalPrice = Number(item.scheduledPrice);
+      }
+
+      return {
+        id: item.id,
+        category_id: item.categoryId,
+        name: item.name,
+        weight: item.weight,
+        price: finalPrice,
+        original_price: Number(item.price),
+        old_price: item.oldPrice ? Number(item.oldPrice) : null,
+        variants: item.variants || [],
+        description: item.description,
+        image_url: item.imageUrl,
+        is_visible: item.isVisible !== undefined ? item.isVisible : true,
+        is_available: item.isAvailable,
+        sort_order: item.sortOrder,
+        tags: item.tags || [],
+        addons: item.addons,
+        scheduled_price: item.scheduledPrice ? Number(item.scheduledPrice) : null,
+        scheduled_start: item.scheduledStart ? item.scheduledStart.toISOString() : null,
+        scheduled_end: item.scheduledEnd ? item.scheduledEnd.toISOString() : null,
+        created_at: item.createdAt.toISOString(),
+      };
+    });
 
     return NextResponse.json({
       success: true,

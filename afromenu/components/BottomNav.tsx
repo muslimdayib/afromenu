@@ -9,17 +9,23 @@ import { useAuth } from "@/context/AuthContext";
 interface BottomNavProps {
   slug: string;
   activeTab: "edit" | "components" | "qr" | "more";
-  onOpenEditEstablishment: () => void;
+  onOpenEditEstablishment?: () => void;
+  onOpenAccountSettings?: () => void;
 }
 
-export default function BottomNav({ slug, activeTab, onOpenEditEstablishment }: BottomNavProps) {
+export default function BottomNav({ 
+  slug, 
+  activeTab, 
+  onOpenEditEstablishment, 
+  onOpenAccountSettings 
+}: BottomNavProps) {
   const { signOut } = useAuth();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const router = useRouter();
 
-  const handleMoreItemClick = (action: () => void) => {
+  const handleMoreItemClick = (action?: () => void) => {
     setShowMoreMenu(false);
-    action();
+    if (action) action();
   };
 
   return (
@@ -92,9 +98,15 @@ export default function BottomNav({ slug, activeTab, onOpenEditEstablishment }: 
 
         {/* More Tab */}
         <button
-          onClick={() => setShowMoreMenu(!showMoreMenu)}
+          onClick={() => {
+            if (activeTab === "edit") {
+              onOpenEditEstablishment && onOpenEditEstablishment();
+            } else {
+              onOpenAccountSettings && onOpenAccountSettings();
+            }
+          }}
           className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-            activeTab === "more" || showMoreMenu ? "text-[#f7906c]" : "text-gray-400 hover:text-gray-600"
+            activeTab === "more" ? "text-[#f7906c]" : "text-gray-400 hover:text-gray-600"
           }`}
         >
           <MoreHorizontal className="w-5 h-5 mb-1" />
