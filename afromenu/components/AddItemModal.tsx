@@ -190,37 +190,38 @@ export default function AddItemModal({
         }
       }
 
-      if (itemToEdit) {
-        // Edit existing
-        const { error: updateError } = await supabase
-          .from("items")
-          .update({
+      const payload = itemToEdit
+        ? {
+            id: itemToEdit.id,
             name,
             description: description || null,
             price: parseFloat(price),
-            image_url: finalImageUrl || null,
-            model_3d_url: model3dUrl.trim() || null,
-            is_available: isAvailable,
+            imageUrl: finalImageUrl || null,
+            model3dUrl: model3dUrl.trim() || null,
+            isAvailable,
             tags,
-          })
-          .eq("id", itemToEdit.id);
+          }
+        : {
+            categoryId,
+            name,
+            description: description || null,
+            price: parseFloat(price),
+            imageUrl: finalImageUrl || null,
+            model3dUrl: model3dUrl.trim() || null,
+            isAvailable,
+            tags,
+            sortOrder: nextSortOrder,
+          };
 
-        if (updateError) throw updateError;
-      } else {
-        // Create new
-        const { error: insertError } = await supabase.from("items").insert({
-          category_id: categoryId,
-          name,
-          description: description || null,
-          price: parseFloat(price),
-          image_url: finalImageUrl || null,
-          model_3d_url: model3dUrl.trim() || null,
-          is_available: isAvailable,
-          tags,
-          sort_order: nextSortOrder,
-        });
+      const res = await fetch("/api/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-        if (insertError) throw insertError;
+      const responseData = await res.json();
+      if (!res.ok) {
+        throw new Error(responseData.error || responseData.details || "Failed to save item.");
       }
 
       onSuccess();

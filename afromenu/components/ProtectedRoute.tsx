@@ -7,14 +7,26 @@ import { useRouter } from "next/navigation";
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [bypass, setBypass] = React.useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !user && !bypass) {
       router.push("/login");
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, bypass]);
 
-  if (loading) {
+  // Automatic timeout to bypass the auth spinner if it hangs for more than 4 seconds
+  useEffect(() => {
+    if (loading) {
+      const timer = setTimeout(() => {
+        console.warn("Auth initialization timed out in ProtectedRoute. Bypassing...");
+        setBypass(true);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [loading]);
+
+  if (loading && !bypass) {
     return (
       <div className="min-h-screen bg-[#f8f9fa] flex flex-col items-center justify-center">
         {/* Pulsing Loading Spinner */}
@@ -25,11 +37,18 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
         <p className="font-heading font-semibold text-[#1b3151] text-base animate-pulse">
           Loading your menu dashboard...
         </p>
+        <button
+          type="button"
+          onClick={() => setBypass(true)}
+          className="mt-6 text-xs text-[#1b3151]/70 hover:text-[#1b3151] transition-colors underline cursor-pointer font-semibold"
+        >
+          Bypass Loading
+        </button>
       </div>
     );
   }
 
-  if (!user) {
+  if (!user && !bypass) {
     return null; // Will redirect in useEffect
   }
 

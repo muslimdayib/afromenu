@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id             String          @id @db.Uuid
+  name           String          @db.VarChar(100)
+  email          String          @unique @db.VarChar(255)
+  createdAt      DateTime        @default(dbgenerated("timezone('utc'::text, now())")) @map("created_at") @db.Timestamptz(6)
+  establishments Establishment[]
+
+  @@map("users")
+}
+
+model Establishment {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String     @map("user_id") @db.Uuid
+  name           String     @db.VarChar(200)
+  slug           String     @unique @db.VarChar(100)
+  currency       String     @default("USD") @db.VarChar(50)
+  currencySymbol String     @default("$") @map("currency_symbol") @db.VarChar(10)
+  language       String     @default("English") @db.VarChar(50)
+  theme          String     @default("light") @db.VarChar(10)
+  brandColor     String?    @default("#f7906c") @map("brand_color") @db.VarChar(7)
+  templateStyle  String?    @default("minimalist") @map("template_style") @db.VarChar(50)
+  logoUrl        String?    @map("logo_url")
+  backgroundUrl  String?    @map("background_url")
+  wifiPassword   String?    @map("wifi_password") @db.VarChar(100)
+  phone          String?    @db.VarChar(30)
+  isActive       Boolean    @default(true) @map("is_active")
+  paidUntil      DateTime   @default(dbgenerated("(now() + '30 days'::interval)")) @map("paid_until") @db.Timestamptz(6)
+  createdAt      DateTime   @default(dbgenerated("timezone('utc'::text, now())")) @map("created_at") @db.Timestamptz(6)
+  categories     Category[]
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId], map: "idx_establishments_user_id")
+  @@index([slug], map: "idx_establishments_slug")
+  @@map("establishments")
+}
+
+model Category {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  establishmentId String        @map("establishment_id") @db.Uuid
+  name            String        @db.VarChar(200)
+  imageUrl        String?       @map("image_url")
+  sortOrder       Int           @default(0) @map("sort_order")
+  isVisible       Boolean       @default(true) @map("is_visible")
+  sectionName     String?       @map("section_name") @db.VarChar(100)
+  createdAt       DateTime      @default(dbgenerated("timezone('utc'::text, now())")) @map("created_at") @db.Timestamptz(6)
+  establishment   Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  items           Item[]
+
+  @@index([establishmentId], map: "idx_categories_establishment_id")
+  @@map("categories")
+}
+
+model Item {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  categoryId  String   @map("category_id") @db.Uuid
+  name        String   @db.VarChar(200)
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String?  @map("image_url")
+  isAvailable Boolean  @default(true) @map("is_available")
+  sortOrder   Int      @default(0) @map("sort_order")
+  tags        String[] @default([]) @db.VarChar
+  createdAt   DateTime @default(dbgenerated("timezone('utc'::text, now())")) @map("created_at") @db.Timestamptz(6)
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([categoryId], map: "idx_items_category_id")
+  @@map("items")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model menu_items {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category_id  BigInt
+  name         String
+  description  String?
+  price        Decimal  @db.Decimal(10, 2)
+  image_url    String?
+  is_available Boolean  @default(true)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  old_price    Decimal? @db.Decimal(10, 2)
+  is_hidden    Boolean? @default(false)
+  sort_order   Int?     @default(0)
+
+  @@index([category_id], map: "idx_menu_items_category_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model restaurants {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  logo_url      String?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  slug          String?  @unique
+  phone         String?
+  address       String?
+  wifi_password String?
+  description   String?
+  is_active     Boolean? @default(true)
+  currency      String?  @default("$")
+  languages     String[] @default(["en"])
+}

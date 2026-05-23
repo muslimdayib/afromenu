@@ -114,7 +114,7 @@ const TEMPLATES = [
 ];
 
 function OnboardingContent() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
@@ -130,26 +130,75 @@ function OnboardingContent() {
   useEffect(() => {
     async function checkExistingEstablishment() {
       if (!user) return;
-      try {
-        const { data, error } = await supabase
-          .from("establishments")
-          .select("slug")
-          .eq("user_id", user.id)
-          .limit(1);
+      setError(null);
+      setCheckingExisting(true);
 
-        if (!error && data && data.length > 0) {
-          router.push(`/p/${data[0].slug}`);
-          return;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.warn("API request timed out after 5 seconds. Aborting...");
+        controller.abort();
+      }, 5000);
+
+      try {
+        // Retrieve session token to authenticate the API request
+        let token = session?.access_token;
+        if (!token) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          token = sessionData.session?.access_token;
         }
-      } catch (err) {
+
+        if (!token) {
+          throw new Error("No active session token found. Please log in again.");
+        }
+
+        console.log("Starting API fetch to connection-pooled establishments endpoint...");
+        const res = await fetch("/api/establishments/mine", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+        console.log("API response received");
+
+        const responseData = await res.json();
+
+        if (!res.ok) {
+          throw new Error(
+            responseData.details || responseData.error || "Failed to query establishments."
+          );
+        }
+
+        const establishments = responseData.establishments;
+
+        const searchParams = new URLSearchParams(window.location.search);
+        const isForceNew = searchParams.get("new") === "true";
+
+        // Redirect to dashboard if the user already has an establishment
+        if (!isForceNew && establishments && establishments.length > 0) {
+          console.log("Establishment found. Redirecting to dashboard.");
+          router.push("/dashboard");
+          return;
+        } else {
+          console.log("0 establishments found or forced new onboarding. Stopping spinner.");
+        }
+      } catch (err: any) {
+        clearTimeout(timeoutId);
         console.error("Error checking existing establishment:", err);
+        if (err.name === "AbortError") {
+          setError("Database connection check timed out. Bypassing check and loading form.");
+        } else {
+          setError(err?.message || "Failed to check existing establishments.");
+        }
       } finally {
         setCheckingExisting(false);
       }
     }
 
     checkExistingEstablishment();
-  }, [user, router]);
+  }, [user, session, router]);
 
   // Slugify Helper: lowercase, hyphens, alphanumeric
   const slugify = (text: string) => {
@@ -200,34 +249,39 @@ function OnboardingContent() {
     setLoading(true);
 
     try {
-      const selectedCurrencyObj = CURRENCIES.find((c) => c.code === currencyCode);
-      const symbol = selectedCurrencyObj ? selectedCurrencyObj.symbol : "$";
-      const currencyLabel = selectedCurrencyObj ? selectedCurrencyObj.name.split(" (")[0] : "US Dollar";
+      let token = session?.access_token;
+      if (!token) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        token = sessionData.session?.access_token;
+      }
 
-      const { data, error: insertError } = await supabase
-        .from("establishments")
-        .insert({
-          user_id: user?.id,
+      if (!token) {
+        throw new Error("No active session token found. Please log in again.");
+      }
+
+      const res = await fetch("/api/establishments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
           name,
           slug,
-          currency: currencyLabel,
-          currency_symbol: symbol,
+          currencyCode,
           language,
-          template_style: templateStyle,
-          brand_color: "#f2bd11", // Brand Accent Default Gold
-        })
-        .select()
-        .single();
+          templateStyle,
+        }),
+      });
 
-      if (insertError) {
-        if (insertError.code === "23505") {
-          setError("This short URL slug is already taken. Try another name.");
-          setStep(1); // send back to Step 1 to fix slug
-        } else {
-          setError(insertError.message);
-        }
-      } else if (data) {
-        router.push(`/p/${data.slug}`);
+      const responseData = await res.json();
+
+      if (!res.ok) {
+        throw new Error(responseData.error || responseData.details || "Failed to save establishment.");
+      }
+
+      if (responseData.success) {
+        router.push("/dashboard");
       }
     } catch (err: any) {
       setError(err?.message || "Something went wrong.");
@@ -246,6 +300,13 @@ function OnboardingContent() {
         <p className="font-heading font-semibold text-sm text-slate-300">
           Checking for active menus...
         </p>
+        <button
+          type="button"
+          onClick={() => setCheckingExisting(false)}
+          className="mt-6 text-xs text-[#f2bd11]/70 hover:text-[#f2bd11] transition-colors underline cursor-pointer font-semibold"
+        >
+          Bypass Loading
+        </button>
       </div>
     );
   }
@@ -534,7 +595,7 @@ function OnboardingContent() {
           )}
 
           <p className="text-center text-[10px] text-slate-400 mt-8 leading-relaxed">
-            By proceeding, you unlock your 30-day Premium Digital Menu free trial. No card details required.
+            By proceeding, you unlock unlimited free access to Afromenu Digital Menus. No payment details required.
           </p>
         </div>
       </main>

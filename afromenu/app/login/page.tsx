@@ -19,7 +19,7 @@ export default function LoginPage() {
   // If already logged in, redirect immediately
   React.useEffect(() => {
     if (user) {
-      router.push("/onboarding");
+      router.push("/dashboard");
     }
   }, [user, router]);
 
@@ -37,7 +37,7 @@ export default function LoginPage() {
       if (loginError) {
         setError(loginError.message);
       } else if (data?.user) {
-        router.push("/onboarding");
+        router.push("/dashboard");
       }
     } catch (err: any) {
       setError(err?.message || "An unexpected error occurred.");

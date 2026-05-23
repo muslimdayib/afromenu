@@ -21,7 +21,7 @@ export default function SignUpPage() {
   // If already logged in, redirect immediately
   React.useEffect(() => {
     if (user) {
-      router.push("/onboarding");
+      router.push("/dashboard");
     }
   }, [user, router]);
 
@@ -57,7 +57,7 @@ export default function SignUpPage() {
       if (signUpError) {
         setError(signUpError.message);
       } else if (data?.user) {
-        router.push("/onboarding");
+        router.push("/dashboard");
       }
     } catch (err: any) {
       setError(err?.message || "An unexpected error occurred.");
@@ -100,7 +100,7 @@ export default function SignUpPage() {
               Create your account
             </h2>
             <p className="text-sm text-gray-500">
-              Start your free 1-month digital menu trial today.
+              Create your unlimited free digital menu today.
             </p>
           </div>
 

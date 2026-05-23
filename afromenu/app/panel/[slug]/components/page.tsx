@@ -19,17 +19,17 @@ function ComponentsContent() {
 
   const fetchEstablishment = async () => {
     try {
-      const { data, error } = await supabase
-        .from("establishments")
-        .select("*")
-        .eq("slug", slug)
-        .single();
-
-      if (error || !data) {
+      const res = await fetch(`/api/establishments/by-slug/${slug}`);
+      if (!res.ok) {
         router.push("/onboarding");
         return;
       }
-      setEstablishment(data);
+      const responseData = await res.json();
+      if (!responseData.success || !responseData.establishment) {
+        router.push("/onboarding");
+        return;
+      }
+      setEstablishment(responseData.establishment);
     } catch (err) {
       console.error(err);
     } finally {

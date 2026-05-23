@@ -42,15 +42,7 @@ export default function BottomNav({ slug, activeTab, onOpenEditEstablishment }: 
               <span>Edit Info</span>
             </button>
             
-            <button
-              onClick={() => handleMoreItemClick(() => router.push(`/panel/${slug}/billing`))}
-              className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-[#2d2d2d] hover:bg-[#1b3151]/5 hover:text-[#1b3151] rounded-xl transition-all text-left w-full"
-            >
-              <CreditCard className="w-4.5 h-4.5" />
-              <span>Billing</span>
-            </button>
-            
-            <hr className="border-[#eeeeee] my-1" />
+
             
             <button
               onClick={() => handleMoreItemClick(signOut)}
@@ -69,7 +61,7 @@ export default function BottomNav({ slug, activeTab, onOpenEditEstablishment }: 
         <Link
           href={`/p/${slug}`}
           className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-            activeTab === "edit" ? "text-[#1b3151]" : "text-gray-400 hover:text-gray-600"
+            activeTab === "edit" ? "text-[#f7906c]" : "text-gray-400 hover:text-gray-600"
           }`}
         >
           <Edit2 className="w-5 h-5 mb-1" />
@@ -80,7 +72,7 @@ export default function BottomNav({ slug, activeTab, onOpenEditEstablishment }: 
         <Link
           href={`/panel/${slug}/components`}
           className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-            activeTab === "components" ? "text-[#1b3151]" : "text-gray-400 hover:text-gray-600"
+            activeTab === "components" ? "text-[#f7906c]" : "text-gray-400 hover:text-gray-600"
           }`}
         >
           <Puzzle className="w-5 h-5 mb-1" />
@@ -91,7 +83,7 @@ export default function BottomNav({ slug, activeTab, onOpenEditEstablishment }: 
         <Link
           href={`/panel/${slug}/qr-code`}
           className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-            activeTab === "qr" ? "text-[#1b3151]" : "text-gray-400 hover:text-gray-600"
+            activeTab === "qr" ? "text-[#f7906c]" : "text-gray-400 hover:text-gray-600"
           }`}
         >
           <QrCode className="w-5 h-5 mb-1" />
@@ -102,7 +94,7 @@ export default function BottomNav({ slug, activeTab, onOpenEditEstablishment }: 
         <button
           onClick={() => setShowMoreMenu(!showMoreMenu)}
           className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-            activeTab === "more" || showMoreMenu ? "text-[#1b3151]" : "text-gray-400 hover:text-gray-600"
+            activeTab === "more" || showMoreMenu ? "text-[#f7906c]" : "text-gray-400 hover:text-gray-600"
           }`}
         >
           <MoreHorizontal className="w-5 h-5 mb-1" />

@@ -10,8 +10,9 @@ interface AddCategoryModalProps {
   onClose: () => void;
   onSuccess: () => void;
   establishmentId: string;
-  categoryToEdit?: { id: string; name: string; image_url: string | null; sort_order: number } | null;
+  categoryToEdit?: { id: string; name: string; image_url: string | null; sort_order: number; section_name?: string | null } | null;
   nextSortOrder: number;
+  defaultSectionName?: string | null;
 }
 
 // Preset appetizing category backgrounds for fallbacks
@@ -30,11 +31,13 @@ export default function AddCategoryModal({
   establishmentId,
   categoryToEdit,
   nextSortOrder,
+  defaultSectionName,
 }: AddCategoryModalProps) {
   const [name, setName] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [sectionName, setSectionName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,14 +46,16 @@ export default function AddCategoryModal({
       setName(categoryToEdit.name);
       setImageUrl(categoryToEdit.image_url || "");
       setPreviewUrl(categoryToEdit.image_url);
+      setSectionName(categoryToEdit.section_name || "");
     } else {
       setName("");
       setImageUrl("");
       setImageFile(null);
       setPreviewUrl(null);
+      setSectionName(defaultSectionName || "");
     }
     setError(null);
-  }, [categoryToEdit, isOpen]);
+  }, [categoryToEdit, isOpen, defaultSectionName]);
 
   if (!isOpen) return null;
 
@@ -123,28 +128,19 @@ export default function AddCategoryModal({
         finalImageUrl = PRESETS[Math.floor(Math.random() * PRESETS.length)];
       }
 
-      if (categoryToEdit) {
-        // Edit existing
-        const { error: updateError } = await supabase
-          .from("categories")
-          .update({
-            name,
-            image_url: finalImageUrl,
-          })
-          .eq("id", categoryToEdit.id);
+      const payload = categoryToEdit
+        ? { id: categoryToEdit.id, name, imageUrl: finalImageUrl, sectionName: sectionName.trim() || null }
+        : { establishmentId, name, imageUrl: finalImageUrl, sortOrder: nextSortOrder, sectionName: sectionName.trim() || null };
 
-        if (updateError) throw updateError;
-      } else {
-        // Create new
-        const { error: createError } = await supabase.from("categories").insert({
-          establishment_id: establishmentId,
-          name,
-          image_url: finalImageUrl,
-          sort_order: nextSortOrder,
-          is_visible: true,
-        });
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-        if (createError) throw createError;
+      const responseData = await res.json();
+      if (!res.ok) {
+        throw new Error(responseData.error || responseData.details || "Failed to save category.");
       }
 
       onSuccess();
@@ -194,6 +190,20 @@ export default function AddCategoryModal({
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. BURGERS (11 AM - 9 PM)"
               required
+              className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-gray-50 placeholder:text-gray-400 font-bold"
+            />
+          </div>
+
+          {/* Section Name */}
+          <div>
+            <label className="block text-xs font-bold text-[#2d2d2d] uppercase tracking-wider mb-2">
+              Menu Section (optional, e.g. Food, Drinks)
+            </label>
+            <input
+              type="text"
+              value={sectionName}
+              onChange={(e) => setSectionName(e.target.value)}
+              placeholder="e.g. Food"
               className="w-full px-4 py-3 rounded-xl border border-[#eeeeee] focus:border-[#1b3151] focus:outline-none text-sm text-[#1b3151] bg-gray-50 placeholder:text-gray-400 font-bold"
             />
           </div>

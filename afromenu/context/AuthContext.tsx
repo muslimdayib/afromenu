@@ -63,15 +63,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+        try {
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
 
-        if (currentSession?.user) {
-          await fetchProfile(currentSession.user.id);
-        } else {
-          setProfile(null);
+          if (currentSession?.user) {
+            await fetchProfile(currentSession.user.id);
+          } else {
+            setProfile(null);
+          }
+        } catch (err) {
+          console.error("Auth state change query failure:", err);
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 

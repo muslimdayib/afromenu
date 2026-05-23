@@ -45,6 +45,7 @@ export default function HybridMenuPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Interface view states
   const [isOwner, setIsOwner] = useState(false);
@@ -63,60 +64,47 @@ export default function HybridMenuPage() {
   // V3 Detail modal states
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedItemForDetail, setSelectedItemForDetail] = useState<any>(null);
+  
+  // Search query for real-time filtering in the redesigned editor
+  const [searchQuery, setSearchQuery] = useState("");
+  
+  // Currently active section pill (e.g. Food, Drinks)
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
 
   // Fetch all menu items
   const fetchMenuData = async () => {
     try {
-      // 1. Fetch establishment
-      const { data: estData, error: estError } = await supabase
-        .from("establishments")
-        .select("*")
-        .eq("slug", slug)
-        .single();
+      setError(null);
+      const res = await fetch(`/api/establishments/by-slug/${slug}`);
+      
+      if (!res.ok) {
+        if (res.status === 404) {
+          setEstablishment(null);
+          return;
+        }
+        throw new Error(`Failed to load menu: ${res.statusText}`);
+      }
 
-      if (estError || !estData) {
+      const data = await res.json();
+      
+      if (!data.success || !data.establishment) {
         setEstablishment(null);
-        setLoading(false);
         return;
       }
 
-      setEstablishment(estData);
+      setEstablishment(data.establishment);
+      setCategories(data.categories || []);
+      setItems(data.items || []);
 
       // Check if logged-in user owns it
-      if (user && user.id === estData.user_id) {
+      if (user && user.id === data.establishment.user_id) {
         setIsOwner(true);
       } else {
         setIsOwner(false);
       }
-
-      // 2. Fetch categories (filtering out soft deleted records)
-      const { data: catData, error: catError } = await supabase
-        .from("categories")
-        .select("*")
-        .eq("establishment_id", estData.id)
-        .is("deleted_at", null)
-        .order("sort_order", { ascending: true });
-
-      if (catError) throw catError;
-      setCategories(catData || []);
-
-      // 3. Fetch items (filtering out soft deleted records)
-      if (catData && catData.length > 0) {
-        const catIds = catData.map((c) => c.id);
-        const { data: itemsData, error: itemsError } = await supabase
-          .from("items")
-          .select("*")
-          .in("category_id", catIds)
-          .is("deleted_at", null)
-          .order("sort_order", { ascending: true });
-
-        if (itemsError) throw itemsError;
-        setItems(itemsData || []);
-      } else {
-        setItems([]);
-      }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error loading menu data:", err);
+      setError(err?.message || "Could not load menu");
     } finally {
       setLoading(false);
     }
@@ -142,6 +130,35 @@ export default function HybridMenuPage() {
     );
   }
 
+  // Error Boundary UI
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#f8f9fa] flex flex-col items-center justify-center p-6 text-center">
+        <div className="bg-white p-8 md:p-10 rounded-[32px] max-w-md w-full border border-red-100 shadow-xl flex flex-col items-center animate-slide-up">
+          <div className="w-16 h-16 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-6 shadow-md border border-red-100">
+            <Trash2 className="w-8 h-8" />
+          </div>
+          <h1 className="font-heading font-extrabold text-2xl text-[#1b3151] mb-3">
+            Could Not Load Menu
+          </h1>
+          <p className="text-sm text-slate-500 leading-relaxed mb-6 bg-red-50/50 p-4 rounded-2xl border border-red-50 w-full font-mono break-all text-left">
+            Error: {error}
+          </p>
+          <button
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              fetchMenuData();
+            }}
+            className="w-full py-3.5 bg-[#f2bd11] hover:bg-[#dbab0f] text-[#1b3151] font-extrabold rounded-[50px] shadow-md transition-all text-sm hover:shadow-lg cursor-pointer"
+          >
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // 404 Not Found Fallback
   if (!establishment) {
     return (
@@ -163,8 +180,6 @@ export default function HybridMenuPage() {
     );
   }
 
-  // Trial / Paid Expired Alert banner check
-  const isExpired = new Date(establishment.paid_until) < new Date();
 
   // Category Ordering Handler: Swap sort orders
   const handleSwapOrder = async (index: number, direction: "up" | "down") => {
@@ -180,10 +195,18 @@ export default function HybridMenuPage() {
       catA.sort_order = catB.sort_order;
       catB.sort_order = tempOrder;
 
-      // Update in DB
+      // Update in DB via API
       await Promise.all([
-        supabase.from("categories").update({ sort_order: catA.sort_order }).eq("id", catA.id),
-        supabase.from("categories").update({ sort_order: catB.sort_order }).eq("id", catB.id),
+        fetch("/api/categories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: catA.id, sortOrder: catA.sort_order }),
+        }),
+        fetch("/api/categories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: catB.id, sortOrder: catB.sort_order }),
+        }),
       ]);
 
       // Re-fetch
@@ -197,7 +220,10 @@ export default function HybridMenuPage() {
   const handleDeleteCategory = async (catId: string) => {
     if (!confirm("Are you sure you want to delete this category and all its menu items?")) return;
     try {
-      await supabase.from("categories").update({ deleted_at: new Date().toISOString() }).eq("id", catId);
+      const res = await fetch(`/api/categories?id=${catId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Delete request failed");
       fetchMenuData();
     } catch (err) {
       console.error("Delete category failed:", err);
@@ -208,105 +234,260 @@ export default function HybridMenuPage() {
   const handleDeleteItem = async (itemId: string) => {
     if (!confirm("Are you sure you want to delete this dish?")) return;
     try {
-      await supabase.from("items").update({ deleted_at: new Date().toISOString() }).eq("id", itemId);
+      const res = await fetch(`/api/items?id=${itemId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Delete request failed");
       fetchMenuData();
     } catch (err) {
       console.error("Delete item failed:", err);
     }
   };
 
-  // Custom variable for brand theme colors
-  const brandStyles = {
-    "--brand-color": establishment.brand_color || "#f2bd11",
-    "--brand-color-dark": "#1b3151",
-  } as React.CSSProperties;
-
   /* =========================================================================
      1. OWNER MODE LAYOUT (Edit Dashboard)
      ========================================================================= */
   if (isOwner) {
-    return (
-      <div style={brandStyles} className="min-h-screen bg-[#f8f9fa] pb-24 text-[#1b3151]">
-        {/* Trial Expired Alert Banner */}
-        {isExpired && (
-          <div className="bg-red-500 text-white text-xs font-bold text-center py-2 px-4 flex items-center justify-center gap-2">
-            <span>🚨 Trial has expired. Upgrade your billing plan to reactivate the menu.</span>
-            <button
-              onClick={() => router.push(`/panel/${slug}/billing`)}
-              className="px-3 py-1 bg-white text-red-500 font-extrabold rounded-full hover:bg-red-50 transition-colors uppercase text-[10px]"
-            >
-              Billing
-            </button>
-          </div>
-        )}
+    // Filter categories & items dynamically using real-time search query
+    const filteredCategories = categories.filter((cat) => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      const matchesCatName = cat.name.toLowerCase().includes(query);
+      const hasMatchingItems = items.some(
+        (item) =>
+          item.category_id === cat.id &&
+          (item.name.toLowerCase().includes(query) ||
+            (item.description && item.description.toLowerCase().includes(query)))
+      );
+      return matchesCatName || hasMatchingItems;
+    });
 
-        {/* Edit mode Topbar: Navy Blue (#1b3151), White text, Gold active highlights */}
-        <div className="bg-[#1b3151] border-b border-[#f2bd11]/20 px-6 py-4 sticky top-0 z-30 shadow-md flex items-center justify-between max-w-[430px] mx-auto text-white">
+    return (
+      <div className="min-h-screen bg-[#fdf6f2] pb-24 text-[#2d2d2d] font-sans antialiased">
+        
+        {/* PREMIUM HEADER */}
+        <header className="bg-white border-b border-gray-100/80 sticky top-0 z-30 shadow-sm px-6 py-4 flex items-center justify-between max-w-[430px] mx-auto">
+          {/* X close button top left */}
           <button
-            onClick={() => router.push("/")}
-            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors font-bold"
+            onClick={() => router.push("/dashboard")}
+            className="w-9 h-9 rounded-full bg-[#fdf6f2] hover:bg-[#f7906c]/10 flex items-center justify-center text-[#2d2d2d] hover:text-[#f7906c] transition-all font-bold border border-transparent"
           >
             ✕
           </button>
-          <div className="text-center">
-            <h1 className="font-heading font-extrabold text-base tracking-tight truncate max-w-[180px] text-white">
-              {establishment.name}
-            </h1>
-            <span className="text-[10px] bg-[#f2bd11] text-[#1b3151] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-              Visual Editor V3
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-[#f2bd11] text-[#1b3151] flex items-center justify-center font-bold text-sm shadow-sm uppercase">
-              {profile?.name ? profile.name[0] : "O"}
-            </div>
-          </div>
-        </div>
+          
+          {/* Restaurant name centered and bold */}
+          <h1 className="font-heading font-extrabold text-base tracking-tight truncate max-w-[180px] text-[#2d2d2d] uppercase">
+            {establishment.name}
+          </h1>
 
-        {/* Content Container (Mobile size locked at 430px centered) */}
-        <div className="max-w-[430px] mx-auto px-4 py-6">
-          {/* Header instructions */}
-          <div className="p-4 rounded-3xl bg-white border border-gray-100 shadow-sm mb-6 flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-[#1b3151]/5 text-[#f2bd11] flex items-center justify-center flex-shrink-0">
-              <Sparkles className="w-5 h-5 text-[#1b3151]" />
-            </div>
-            <div>
-              <h4 className="font-bold text-xs">Visual Editor Mode</h4>
-              <p className="text-[10px] text-gray-500">
-                Add food cards, tap them to manage pricing, and sort using arrows.
-              </p>
-            </div>
+          {/* Small user avatar circle top right */}
+          <div className="w-8 h-8 rounded-full bg-[#f7906c] text-white flex items-center justify-center font-bold text-sm shadow-sm uppercase select-none">
+            {profile?.name ? profile.name[0] : (user?.email ? user.email[0] : "O")}
           </div>
+        </header>
 
-          {/* Top '+' Category Trigger - Styled Premium Gold */}
-          <button
-            onClick={() => {
-              setCategoryToEdit(null);
-              setIsCatModalOpen(true);
-            }}
-            className="w-full py-4 border border-dashed border-[#1b3151]/30 hover:border-[#1b3151] text-[#1b3151] font-extrabold text-xs rounded-2xl bg-white hover:bg-[#1b3151]/5 transition-all flex items-center justify-center gap-2 mb-4 shadow-sm"
-          >
-            <Plus className="w-4 h-4 text-[#f2bd11]" />
-            <span>Add Menu Category</span>
-          </button>
-
-          {/* Categories Loop list */}
-          {categories.length === 0 ? (
-            <div className="p-8 text-center bg-white border border-gray-100 rounded-3xl shadow-sm my-8 text-gray-400">
-              <Utensils className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-              <p className="text-xs">No categories created yet.</p>
+        {/* CONTENT CONTAINER (Mobile size locked at 430px centered) */}
+        <main className="max-w-[430px] mx-auto px-4 py-6 flex flex-col gap-6">
+          
+          {/* ESTABLISHMENT INFO SECTION */}
+          <section className="bg-white p-5 rounded-3xl border border-orange-50 shadow-sm flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h2 className="font-heading font-black text-lg text-[#2d2d2d] tracking-tight">
+                  {establishment.name}
+                </h2>
+                <button
+                  onClick={() => setIsEstModalOpen(true)}
+                  className="p-1.5 rounded-full hover:bg-[#fdf6f2] text-gray-400 hover:text-[#f7906c] transition-all"
+                  title="Edit Info"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              </div>
+              <span className="text-[9px] bg-[#f7906c]/15 text-[#f7906c] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                Visual Editor
+              </span>
             </div>
-          ) : (
-            <div className="flex flex-col gap-4">
+
+            {/* Location & WiFi Rows */}
+            <div className="flex flex-col gap-2.5 text-xs text-gray-500 font-medium">
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-[#f7906c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>{establishment.phone || "Main Street branch, Somalia"}</span>
+              </div>
+              
+              {establishment.wifi_password && (
+                <div className="flex items-center gap-2">
+                  <Wifi className="w-4 h-4 text-[#f7906c]" />
+                  <span>Wi-Fi: <strong className="font-mono text-[#2d2d2d]">{establishment.wifi_password}</strong></span>
+                </div>
+              )}
+            </div>
+
+            <hr className="border-gray-50" />
+
+            {/* Description Text */}
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Curate beautiful menu categories, add delicious mock items with custom images, and organize items for your customers in real-time.
+            </p>
+
+            {/* TAB PILLS ROW */}
+            <div className="mt-2 flex flex-col gap-3">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Sections Pills</span>
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+                
+                {/* Plus button before pills */}
+                <button
+                  onClick={() => {
+                    setCategoryToEdit(null);
+                    setIsCatModalOpen(true);
+                  }}
+                  className="w-8 h-8 rounded-full bg-[#fdf6f2] hover:bg-[#f7906c] text-[#f7906c] hover:text-white flex items-center justify-center shadow-sm flex-shrink-0 transition-all font-black border border-orange-100"
+                >
+                  +
+                </button>
+
+                {/* Categories Pills */}
+                {categories.map((cat) => {
+                  const isSelected = expandedCategoryId === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setExpandedCategoryId(isSelected ? null : cat.id)}
+                      className={`px-4 py-2 text-xs font-bold rounded-full transition-all flex-shrink-0 flex items-center gap-1.5 shadow-sm border ${
+                        isSelected
+                          ? "bg-[#f7906c] border-[#f7906c] text-white font-extrabold"
+                          : "bg-white border-[#eeeeee] text-[#2d2d2d] hover:bg-[#fdf6f2]"
+                      }`}
+                    >
+                      <span>{cat.name}</span>
+                    </button>
+                  );
+                })}
+
+                {/* Plus button after last pill */}
+                <button
+                  onClick={() => {
+                    setCategoryToEdit(null);
+                    setIsCatModalOpen(true);
+                  }}
+                  className="w-8 h-8 rounded-full bg-[#fdf6f2] hover:bg-[#f7906c] text-[#f7906c] hover:text-white flex items-center justify-center shadow-sm flex-shrink-0 transition-all font-black border border-orange-100"
+                >
+                  +
+                </button>
+              </div>
+
+              {/* Operations Below Active/Selected Pill */}
               {categories.map((cat, idx) => {
+                const isSelected = expandedCategoryId === cat.id;
+                if (!isSelected) return null;
+                return (
+                  <div key={cat.id} className="flex items-center gap-2 bg-[#fdf6f2]/80 p-2.5 rounded-2xl border border-orange-100/50 justify-center w-full animate-slide-up">
+                    <span className="text-[10px] font-bold text-[#f7906c] uppercase tracking-wider mr-2">{cat.name} actions:</span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleSwapOrder(idx, "up")}
+                        disabled={idx === 0}
+                        className="w-7 h-7 rounded-lg bg-white border border-gray-100 disabled:opacity-30 text-gray-600 hover:text-[#f7906c] flex items-center justify-center transition-all shadow-sm"
+                        title="Move Up"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleSwapOrder(idx, "down")}
+                        disabled={idx === categories.length - 1}
+                        className="w-7 h-7 rounded-lg bg-white border border-gray-100 disabled:opacity-30 text-gray-600 hover:text-[#f7906c] flex items-center justify-center transition-all shadow-sm"
+                        title="Move Down"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCategoryToEdit(cat);
+                          setIsCatModalOpen(true);
+                        }}
+                        className="w-7 h-7 rounded-lg bg-white border border-gray-100 text-gray-600 hover:text-blue-500 flex items-center justify-center transition-all shadow-sm"
+                        title="Edit Category"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="w-7 h-7 rounded-lg bg-red-50 border border-red-100 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shadow-sm"
+                        title="Delete Category"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+            </div>
+          </section>
+
+          {/* SEARCH BAR */}
+          <section className="relative w-full">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search categories or food items..."
+              className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white border border-orange-50 focus:border-[#f7906c] focus:outline-none text-xs text-[#2d2d2d] placeholder:text-gray-400 font-semibold shadow-sm transition-all"
+            />
+            <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+              <svg className="w-4 h-4 text-[#f7906c]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-[10px] font-black text-gray-400 hover:text-[#f7906c] uppercase"
+              >
+                Clear
+              </button>
+            )}
+          </section>
+
+          {/* ADD CATEGORY SECTION */}
+          <section className="flex flex-col gap-2 items-center text-center">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">
+              Add Category
+            </span>
+            <button
+              onClick={() => {
+                setCategoryToEdit(null);
+                setIsCatModalOpen(true);
+              }}
+              className="w-full py-4 bg-[#f7906c] hover:bg-[#e27653] text-white font-extrabold rounded-[50px] shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer text-sm"
+            >
+              <Plus className="w-5 h-5 text-white" />
+              <span>Create New Section</span>
+            </button>
+          </section>
+
+          {/* CATEGORY CARDS */}
+          <section className="flex flex-col gap-5">
+            {filteredCategories.length === 0 ? (
+              <div className="p-10 text-center bg-white border border-orange-50 rounded-[32px] shadow-sm text-gray-400 flex flex-col items-center">
+                <Utensils className="w-10 h-10 mb-2 text-gray-300" />
+                <p className="text-xs font-semibold">No active categories found.</p>
+              </div>
+            ) : (
+              filteredCategories.map((cat, idx) => {
                 const isExpanded = expandedCategoryId === cat.id;
                 const catItems = items.filter((i) => i.category_id === cat.id);
 
                 return (
-                  <div key={cat.id} className="flex flex-col gap-2">
-                    {/* Category Card */}
+                  <div key={cat.id} className="flex flex-col gap-3">
+                    
+                    {/* Category Card (Full Bleed, height 160px) */}
                     <div
-                      className="h-[140px] rounded-3xl overflow-hidden border border-gray-100 relative shadow-md cursor-pointer transition-all hover:shadow-lg"
+                      className="h-[160px] rounded-[16px] overflow-hidden border border-orange-100/50 relative shadow-md cursor-pointer transition-all hover:shadow-lg transform active:scale-[0.99]"
                       onClick={() => setExpandedCategoryId(isExpanded ? null : cat.id)}
                       style={{
                         backgroundImage: cat.image_url ? `url(${cat.image_url})` : "none",
@@ -315,82 +496,73 @@ export default function HybridMenuPage() {
                         backgroundPosition: "center",
                       }}
                     >
-                      {/* Dark overlay */}
+                      {/* Dark Overlay */}
                       <div className="absolute inset-0 bg-black/55 z-0"></div>
 
-                      {/* Top Action Icons */}
+                      {/* Top Right Action Icons */}
                       <div
-                        className="absolute top-3 right-3 flex items-center gap-1.5 z-10"
-                        onClick={(e) => e.stopPropagation()} // Stop click expansion
+                        className="absolute top-4 right-4 flex items-center gap-1.5 z-10"
+                        onClick={(e) => e.stopPropagation()} // Bypasses card click expansion
                       >
-                        {/* Up arrow */}
+                        {/* Down Arrow / Expand */}
                         <button
-                          onClick={() => handleSwapOrder(idx, "up")}
-                          disabled={idx === 0}
-                          className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 disabled:opacity-30 text-white flex items-center justify-center transition-colors"
+                          onClick={() => setExpandedCategoryId(isExpanded ? null : cat.id)}
+                          className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-all"
                         >
-                          <ArrowUp className="w-3.5 h-3.5" />
+                          <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
                         </button>
-                        {/* Down arrow */}
-                        <button
-                          onClick={() => handleSwapOrder(idx, "down")}
-                          disabled={idx === categories.length - 1}
-                          className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/40 disabled:opacity-30 text-white flex items-center justify-center transition-colors"
-                        >
-                          <ArrowDown className="w-3.5 h-3.5" />
-                        </button>
-                        {/* Edit */}
+                        
+                        {/* Edit Pencil */}
                         <button
                           onClick={() => {
                             setCategoryToEdit(cat);
                             setIsCatModalOpen(true);
                           }}
-                          className="w-7 h-7 rounded-full bg-[#f2bd11] hover:bg-[#dbab0f] text-[#1b3151] flex items-center justify-center transition-colors"
+                          className="w-7 h-7 rounded-full bg-[#f7906c] hover:bg-[#e27653] text-white flex items-center justify-center transition-all shadow-md"
+                          title="Edit Category Name & Photo"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
-                        {/* Delete */}
+
+                        {/* Trash Delete */}
                         <button
                           onClick={() => handleDeleteCategory(cat.id)}
-                          className="w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
+                          className="w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-all shadow-md"
+                          title="Delete Category"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
                       {/* Centered Name */}
-                      <div className="absolute inset-0 flex flex-col items-center justify-center px-6 z-0 text-center">
-                        <h3 className="font-heading font-extrabold text-lg text-white uppercase tracking-wider drop-shadow-md">
+                      <div className="absolute inset-0 flex flex-col items-center justify-center px-6 z-0 text-center select-none">
+                        <h3 className="font-heading font-extrabold text-xl text-white uppercase tracking-wider drop-shadow-md">
                           {cat.name}
                         </h3>
-                        <span className="text-[10px] text-white/95 font-bold mt-1 bg-white/10 px-2.5 py-0.5 rounded-full">
-                          {catItems.length} dishes • {isExpanded ? "Click to close" : "Click to view dishes"}
+                        <span className="text-[9px] text-white/95 font-black mt-1 bg-white/10 px-3 py-0.5 rounded-full uppercase tracking-wider">
+                          {catItems.length} Dishes
                         </span>
-                      </div>
-
-                      {/* Expand indicator icon */}
-                      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-white/70">
-                        {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </div>
                     </div>
 
-                    {/* Accordion Dishes Sub-List: Pure White V3 styled card */}
+                    {/* Accordion Dishes Sub-List (White premium background card) */}
                     {isExpanded && (
-                      <div className="p-4 bg-white border border-gray-100 rounded-3xl shadow-md animate-slide-up flex flex-col gap-3">
-                        <div className="flex items-center justify-between border-b border-gray-100 pb-2 mb-1">
-                          <span className="text-xs font-bold text-[#1b3151] uppercase tracking-wider">
-                            Dishes & Drinks
+                      <div className="p-4 bg-white border border-[#eeeeee] rounded-[24px] shadow-lg animate-slide-up flex flex-col gap-3 mx-1">
+                        <div className="flex items-center justify-between border-b border-gray-50 pb-2.5 mb-1">
+                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                            Category Dishes
                           </span>
-                          {/* Add Item Button: Styled Premium Gold */}
+                          
+                          {/* Add Item Button inside expanded category */}
                           <button
                             onClick={() => {
                               setItemToEdit(null);
                               setTargetCategoryIdForItem(cat.id);
                               setIsItemModalOpen(true);
                             }}
-                            className="px-3 py-1.5 bg-[#f2bd11] text-[#1b3151] font-extrabold text-[10px] rounded-full hover:bg-[#dbab0f] transition-all flex items-center gap-1 shadow-sm"
+                            className="px-3.5 py-1.5 bg-[#f7906c] text-white font-extrabold text-[10px] rounded-full hover:bg-[#e27653] transition-all flex items-center gap-1 shadow-sm"
                           >
-                            <Plus className="w-3 h-3 text-[#1b3151]" />
+                            <Plus className="w-3.5 h-3.5 text-white" />
                             <span>Add Dish</span>
                           </button>
                         </div>
@@ -404,13 +576,13 @@ export default function HybridMenuPage() {
                             {catItems.map((item) => (
                               <div
                                 key={item.id}
-                                className={`p-3 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-between gap-3 ${
+                                className={`p-3 rounded-2xl bg-[#fdf6f2]/40 border border-orange-50/50 shadow-sm flex items-center justify-between gap-3 ${
                                   !item.is_available ? "opacity-60 bg-gray-50/50" : ""
                                 }`}
                               >
-                                {/* Left Item Picture & Details */}
+                                {/* Left Item Image & Details */}
                                 <div className="flex items-center gap-3">
-                                  <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center relative">
+                                  <div className="w-12 h-12 rounded-xl bg-white border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center relative shadow-sm">
                                     {item.image_url ? (
                                       <img
                                         src={item.image_url}
@@ -423,27 +595,27 @@ export default function HybridMenuPage() {
                                   </div>
                                   <div>
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                      <h5 className="font-bold text-xs text-[#1b3151]">{item.name}</h5>
+                                      <h5 className="font-extrabold text-xs text-[#2d2d2d]">{item.name}</h5>
                                       {!item.is_available && (
-                                        <span className="text-[7px] font-extrabold uppercase px-1 py-0.5 rounded bg-gray-200 text-gray-600">
+                                        <span className="text-[7px] font-black uppercase px-1 py-0.5 rounded bg-gray-200 text-gray-600">
                                           Unavailable
                                         </span>
                                       )}
                                       {item.tags?.map((t: string) => (
                                         <span
                                           key={t}
-                                          className="text-[7px] font-extrabold uppercase px-1 py-0.5 rounded bg-[#1b3151]/5 text-[#1b3151]"
+                                          className="text-[7px] font-black uppercase px-1.5 py-0.5 rounded bg-[#f7906c]/10 text-[#f7906c]"
                                         >
                                           {t}
                                         </span>
                                       ))}
                                     </div>
-                                    <p className="text-[9px] text-gray-400 line-clamp-1 max-w-[160px]">
-                                      {item.description || "No description set."}
+                                    <p className="text-[9px] text-gray-400 line-clamp-1 max-w-[160px] mt-0.5">
+                                      {item.description || "No recipe description set."}
                                     </p>
-                                    <span className="text-[11px] font-extrabold text-[#f2bd11]">
-                                      {establishment.currency_symbol}
-                                      {item.price.toFixed(2)}
+                                    <span className="text-[11px] font-black text-[#f7906c] block mt-0.5">
+                                      {establishment.currency_symbol || "$"}
+                                      {Number(item.price).toFixed(2)}
                                     </span>
                                   </div>
                                 </div>
@@ -456,7 +628,7 @@ export default function HybridMenuPage() {
                                       setTargetCategoryIdForItem(cat.id);
                                       setIsItemModalOpen(true);
                                     }}
-                                    className="w-7 h-7 rounded-full hover:bg-gray-50 flex items-center justify-center text-gray-500 hover:text-[#1b3151] transition-colors"
+                                    className="w-7 h-7 rounded-full hover:bg-[#f7906c]/10 flex items-center justify-center text-gray-400 hover:text-[#f7906c] transition-colors"
                                   >
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
@@ -474,26 +646,29 @@ export default function HybridMenuPage() {
                       </div>
                     )}
 
-                    {/* Dashboard Inline '+' Between Cards */}
-                    <div className="flex items-center justify-center py-1">
+                    {/* Between Cards coral '+' Insert Button */}
+                    <div className="flex items-center justify-center relative z-10 -my-1">
                       <button
                         onClick={() => {
                           setCategoryToEdit(null);
                           setIsCatModalOpen(true);
                         }}
-                        className="w-8 h-8 rounded-full border border-gray-200 hover:border-[#1b3151] bg-white text-gray-400 hover:text-[#1b3151] shadow-sm flex items-center justify-center transition-all hover:scale-105"
+                        className="w-8 h-8 rounded-full bg-[#f7906c] hover:bg-[#e27653] text-white shadow-md flex items-center justify-center transition-all hover:scale-110"
+                        title="Insert Section Category"
                       >
-                        <Plus className="w-4 h-4 text-[#f2bd11]" />
+                        <Plus className="w-4 h-4 text-white" />
                       </button>
                     </div>
+
                   </div>
                 );
-              })}
-            </div>
-          )}
-        </div>
+              })
+            )}
+          </section>
 
-        {/* Mobile bottom nav */}
+        </main>
+
+        {/* FIXED BOTTOM NAVIGATION BAR */}
         <BottomNav
           slug={slug}
           activeTab="edit"

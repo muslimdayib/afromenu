@@ -77,7 +77,7 @@ export default function Navbar() {
                 Log Out
               </button>
               <Link
-                href="/onboarding"
+                href="/dashboard"
                 className="px-6 py-2.5 rounded-[50px] bg-[#f2bd11] hover:bg-[#dbab0f] text-[#1b3151] font-bold text-sm transition-all shadow-md"
               >
                 Dashboard
@@ -131,7 +131,7 @@ export default function Navbar() {
           {user ? (
             <>
               <Link
-                href="/onboarding"
+                href="/dashboard"
                 onClick={() => setIsOpen(false)}
                 className="text-base font-bold text-[#1b3151] hover:text-[#f2bd11] py-2"
               >
