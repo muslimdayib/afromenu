@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -10,7 +10,7 @@ if (!supabaseAnonKey) {
   throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY – add it to .env.local");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
 /* ------------------------------------------------------------------ */
 /*  Type definitions matching the database schema                      */
@@ -31,7 +31,7 @@ export interface Establishment {
   currency: string;
   currency_symbol: string;
   language: string;
-  template_style: string;
+  menu_style: string;
   brand_color: string;
   logo_url: string | null;
   background_url: string | null;

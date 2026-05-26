@@ -532,7 +532,7 @@ function ComponentsContent() {
                                 <button
                                   type="button"
                                   onClick={() => handleAddOption(gIdx)}
-                                  className="text-[#f7906c] hover:underline"
+                                  className="text-[#f2bd11] hover:underline"
                                 >
                                   + Add Option
                                 </button>
@@ -611,7 +611,7 @@ function ComponentsContent() {
                     if (catItems.length === 0) return null;
                     return (
                       <div key={cat.id} className="flex flex-col gap-2">
-                        <h4 className="text-[10px] font-black text-[#f7906c] uppercase tracking-widest border-b border-gray-50 pb-1 mb-1">
+                        <h4 className="text-[10px] font-black text-[#f2bd11] uppercase tracking-widest border-b border-gray-50 pb-1 mb-1">
                           {cat.name}
                         </h4>
                         
@@ -672,7 +672,7 @@ function ComponentsContent() {
                 </div>
 
                 <div className="p-3.5 bg-[#fdf6f2]/80 border border-orange-100 rounded-2xl flex items-start gap-2">
-                  <Check className="w-4 h-4 text-[#f7906c] mt-0.5" />
+                  <Check className="w-4 h-4 text-[#f2bd11] mt-0.5" />
                   <p className="text-[10px] text-gray-500 leading-normal font-medium">
                     Saving your selection writes the translation meta table preference to the establishment settings. Customers will see menu fields automatically formatted for <strong>{secondaryLanguage}</strong> standard locales.
                   </p>

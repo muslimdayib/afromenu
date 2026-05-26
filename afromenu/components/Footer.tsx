@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Utensils } from "lucide-react";
 
 export default function Footer() {
@@ -9,12 +10,14 @@ export default function Footer() {
         {/* Brand */}
         <div className="md:col-span-2">
           <Link href="/" className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-[#1b3151] flex items-center justify-center text-[#f2bd11] font-bold">
-              <Utensils className="w-4 h-4" />
-            </div>
-            <span className="font-heading font-extrabold text-xl tracking-tight text-[#1b3151]">
-              Afro<span className="text-[#f2bd11]">menu</span>
-            </span>
+            <Image
+              src="/logo.png"
+              alt="Afromenu"
+              width={140}
+              height={40}
+              priority
+              className="h-10 w-auto"
+            />
           </Link>
           <p className="text-[#888888] text-sm max-w-sm leading-relaxed mb-6">
             Create beautiful, responsive QR code digital menus for your restaurant, cafe, or bar. Make it easy for your customers to browse, tap, and order.

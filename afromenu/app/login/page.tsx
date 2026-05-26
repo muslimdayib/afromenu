@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
@@ -51,12 +52,14 @@ export default function LoginPage() {
       {/* Top Navbar Header */}
       <header className="max-w-6xl w-full mx-auto flex items-center justify-between mb-8">
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-9 h-9 rounded-xl bg-[#1b3151] flex items-center justify-center text-[#f2bd11] font-bold shadow-md">
-            <Utensils className="w-5 h-5 text-[#f2bd11]" />
-          </div>
-          <span className="font-heading font-extrabold text-xl tracking-tight text-[#1b3151]">
-            Afro<span className="text-[#f2bd11]">menu</span>
-          </span>
+          <Image
+            src="/logo.png"
+            alt="Afromenu"
+            width={140}
+            height={40}
+            priority
+            className="h-10 w-auto"
+          />
         </Link>
         
         <div className="flex items-center gap-6">

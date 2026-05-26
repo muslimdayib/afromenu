@@ -421,7 +421,7 @@ export default function AddItemModal({
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-50 hover:bg-[#f7906c]/10 flex items-center justify-center text-gray-400 hover:text-[#f7906c] transition-all"
+            className="w-8 h-8 rounded-full bg-slate-50 hover:bg-[#f2bd11]/10 flex items-center justify-center text-gray-400 hover:text-[#f2bd11] transition-all"
           >
             <X className="w-4 h-4" />
           </button>
@@ -441,7 +441,7 @@ export default function AddItemModal({
               SECTION 1: BASIC INFO
               ========================================== */}
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2 border-l-4 border-[#f7906c] pl-2.5">
+            <div className="flex items-center gap-2 border-l-4 border-[#f2bd11] pl-2.5">
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">
                 Basic Info
               </span>
@@ -451,7 +451,7 @@ export default function AddItemModal({
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2">
                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">
-                  Item Name <span className="text-[#f7906c] font-black">*</span>
+                  Item Name <span className="text-[#f2bd11] font-black">*</span>
                 </label>
                 <input
                   type="text"
@@ -459,7 +459,7 @@ export default function AddItemModal({
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Avocado Toast Deluxe"
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f7906c] focus:ring-2 focus:ring-[#f7906c]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#fdf6f2]/20 font-bold transition-all placeholder:text-gray-300"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:ring-2 focus:ring-[#f2bd11]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 font-bold transition-all placeholder:text-gray-300"
                 />
               </div>
               <div>
@@ -471,7 +471,7 @@ export default function AddItemModal({
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   placeholder="e.g. 250g"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f7906c] focus:ring-2 focus:ring-[#f7906c]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#fdf6f2]/20 font-bold transition-all placeholder:text-gray-300"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:ring-2 focus:ring-[#f2bd11]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 font-bold transition-all placeholder:text-gray-300"
                 />
               </div>
             </div>
@@ -480,7 +480,7 @@ export default function AddItemModal({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">
-                  Selling Price <span className="text-[#f7906c] font-black">*</span>
+                  Selling Price <span className="text-[#f2bd11] font-black">*</span>
                 </label>
                 <input
                   type="number"
@@ -490,7 +490,7 @@ export default function AddItemModal({
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="0.00"
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f7906c] focus:ring-2 focus:ring-[#f7906c]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#fdf6f2]/20 font-bold transition-all placeholder:text-gray-300"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:ring-2 focus:ring-[#f2bd11]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 font-bold transition-all placeholder:text-gray-300"
                 />
               </div>
               <div>
@@ -504,13 +504,13 @@ export default function AddItemModal({
                   value={oldPrice}
                   onChange={(e) => setOldPrice(e.target.value)}
                   placeholder="e.g. 14.99"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f7906c] focus:ring-2 focus:ring-[#f7906c]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#fdf6f2]/20 font-bold transition-all placeholder:text-gray-300"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:ring-2 focus:ring-[#f2bd11]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 font-bold transition-all placeholder:text-gray-300"
                 />
               </div>
             </div>
 
             {/* VARIANTS BUILDER */}
-            <div className="bg-[#fdf6f2]/30 p-4 rounded-2xl border border-orange-50 flex flex-col gap-3">
+            <div className="bg-[#f2bd11]/5/30 p-4 rounded-2xl border border-orange-50 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">
@@ -523,7 +523,7 @@ export default function AddItemModal({
                 <button
                   type="button"
                   onClick={handleAddVariant}
-                  className="px-2.5 py-1 text-[9px] font-black text-white bg-[#f7906c] hover:bg-[#e27653] transition-all rounded-lg flex items-center gap-1 shadow-sm uppercase cursor-pointer"
+                  className="px-2.5 py-1 text-[9px] font-black text-white bg-[#f2bd11] hover:bg-[#d4a50e] transition-all rounded-lg flex items-center gap-1 shadow-sm uppercase cursor-pointer"
                 >
                   <Plus className="w-3 h-3" />
                   <span>Add Variant</span>
@@ -531,7 +531,7 @@ export default function AddItemModal({
               </div>
 
               {variants.length === 0 ? (
-                <div className="text-center py-4 border border-dashed border-orange-100 rounded-xl text-[9px] text-gray-400 italic">
+                <div className="text-center py-4 border border-dashed border-amber-100 rounded-xl text-[9px] text-gray-400 italic">
                   No size variants added yet. Tap Add Variant to append items.
                 </div>
               ) : (
@@ -543,7 +543,7 @@ export default function AddItemModal({
                         value={v.name}
                         onChange={(e) => handleVariantFieldChange(index, "name", e.target.value)}
                         placeholder="e.g. Large / Double Patty"
-                        className="flex-1 px-3 py-2 rounded-lg border border-gray-100 focus:border-[#f7906c] focus:outline-none text-xs text-[#2d2d2d] bg-white font-semibold"
+                        className="flex-1 px-3 py-2 rounded-lg border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-white font-semibold"
                       />
                       <input
                         type="number"
@@ -552,7 +552,7 @@ export default function AddItemModal({
                         value={v.price}
                         onChange={(e) => handleVariantFieldChange(index, "price", e.target.value)}
                         placeholder="Price"
-                        className="w-20 px-3 py-2 rounded-lg border border-gray-100 focus:border-[#f7906c] focus:outline-none text-xs text-[#2d2d2d] bg-white font-bold"
+                        className="w-20 px-3 py-2 rounded-lg border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-white font-bold"
                       />
                       <button
                         type="button"
@@ -594,7 +594,7 @@ export default function AddItemModal({
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Give a quick summary of ingredients, seasoning methods, allergens, etc..."
                 rows={3}
-                className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f7906c] focus:outline-none text-xs text-[#2d2d2d] bg-[#fdf6f2]/20 placeholder:text-gray-300 resize-none transition-all"
+                className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 placeholder:text-gray-300 resize-none transition-all"
               />
             </div>
           </div>
@@ -603,7 +603,7 @@ export default function AddItemModal({
               SECTION 2: SCROLLABLE DETAILS
               ========================================== */}
           <div className="flex flex-col gap-4 border-t border-gray-50 pt-5">
-            <div className="flex items-center gap-2 border-l-4 border-[#f7906c] pl-2.5">
+            <div className="flex items-center gap-2 border-l-4 border-[#f2bd11] pl-2.5">
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">
                 Details & Assets
               </span>
@@ -617,14 +617,14 @@ export default function AddItemModal({
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Uploader Trigger */}
-                <div className="relative border-2 border-dashed border-gray-100 hover:border-[#f7906c]/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all h-[120px] bg-[#fdf6f2]/10 hover:bg-[#fdf6f2]/35 group">
+                <div className="relative border-2 border-dashed border-gray-100 hover:border-[#f2bd11]/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all h-[120px] bg-[#f2bd11]/5/10 hover:bg-[#f2bd11]/5/35 group">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleFileChange}
                     className="absolute inset-0 opacity-0 cursor-pointer z-10"
                   />
-                  <Upload className="w-6 h-6 text-[#f7906c] mb-2 group-hover:scale-105 transition-transform" />
+                  <Upload className="w-6 h-6 text-[#f2bd11] mb-2 group-hover:scale-105 transition-transform" />
                   <span className="text-[11px] font-black text-[#2d2d2d]">Upload Custom Photo</span>
                   <span className="text-[8px] text-gray-400 mt-1 uppercase font-bold">PNG, JPG up to 5MB</span>
                 </div>
@@ -666,7 +666,7 @@ export default function AddItemModal({
                       key={idx}
                       type="button"
                       onClick={() => selectPreset(p)}
-                      className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f7906c] focus:outline-none transition-all shadow-sm active:scale-95"
+                      className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f2bd11] focus:outline-none transition-all shadow-sm active:scale-95"
                     >
                       <img src={p} alt="Preset cover" className="w-full h-full object-cover" />
                     </button>
@@ -693,7 +693,7 @@ export default function AddItemModal({
                       }}
                       className={`px-3 py-1.5 rounded-full text-[10px] font-black transition-all border ${
                         isSelected
-                          ? "bg-[#f7906c] border-[#f7906c] text-white shadow-sm"
+                          ? "bg-[#f2bd11] border-[#f2bd11] text-white shadow-sm"
                           : "bg-white border-gray-100 text-gray-400 hover:text-gray-600 hover:border-gray-200"
                       }`}
                     >
@@ -714,7 +714,7 @@ export default function AddItemModal({
                 value={model3dUrl}
                 onChange={(e) => setModel3dUrl(e.target.value)}
                 placeholder="https://yourstore.com/assets/dish.glb"
-                className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f7906c] focus:outline-none text-xs text-[#2d2d2d] bg-[#fdf6f2]/20 font-bold transition-all placeholder:text-gray-300"
+                className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 font-bold transition-all placeholder:text-gray-300"
               />
               <span className="text-[8px] text-gray-400 mt-1 block font-bold leading-normal uppercase">
                 Enables users to project interactive 3D structures in their web browser
@@ -732,7 +732,7 @@ export default function AddItemModal({
                 <button
                   type="button"
                   onClick={() => setIsAddonDropdownOpen(!isAddonDropdownOpen)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-[#fdf6f2]/20 hover:border-gray-200 flex items-center justify-between text-xs text-slate-500 transition-all font-bold"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-[#f2bd11]/5/20 hover:border-gray-200 flex items-center justify-between text-xs text-slate-500 transition-all font-bold"
                 >
                   <div className="flex items-center gap-2">
                     <Search className="w-4 h-4 text-gray-400" />
@@ -742,7 +742,7 @@ export default function AddItemModal({
                         : "Select and link customizable add-ons"}
                     </span>
                   </div>
-                  <span className="text-[10px] text-[#f7906c] font-black uppercase">
+                  <span className="text-[10px] text-[#f2bd11] font-black uppercase">
                     {isAddonDropdownOpen ? "Close" : "Open"}
                   </span>
                 </button>
@@ -757,7 +757,7 @@ export default function AddItemModal({
                         value={addonSearch}
                         onChange={(e) => setAddonSearch(e.target.value)}
                         placeholder="Search addon groups..."
-                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-100 focus:border-[#f7906c] focus:outline-none text-[11px] text-[#2d2d2d] bg-[#fdf6f2]/10 font-semibold"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-[11px] text-[#2d2d2d] bg-[#f2bd11]/5/10 font-semibold"
                       />
                       <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                     </div>
@@ -780,7 +780,7 @@ export default function AddItemModal({
                               onClick={() => toggleAddonGroup(group)}
                               className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-colors border ${
                                 isSelected
-                                  ? "bg-[#fdf6f2] border-orange-100 text-[#f7906c] font-bold"
+                                  ? "bg-[#f2bd11]/5 border-amber-100 text-[#f2bd11] font-bold"
                                   : "bg-white border-transparent hover:bg-slate-50 text-[#2d2d2d]"
                               }`}
                             >
@@ -791,7 +791,7 @@ export default function AddItemModal({
                                 </span>
                               </div>
                               {isSelected ? (
-                                <Check className="w-4 h-4 text-[#f7906c]" />
+                                <Check className="w-4 h-4 text-[#f2bd11]" />
                               ) : (
                                 <span className="text-[10px] text-slate-300 font-bold">+ Link</span>
                               )}
@@ -844,7 +844,7 @@ export default function AddItemModal({
                   href={`/panel/${slug}/components`}
                   target="_blank"
                   rel="noreferrer"
-                  className="font-black text-[#f7906c] hover:text-[#d36e4b] hover:underline flex items-center gap-0.5 uppercase tracking-wide"
+                  className="font-black text-[#f2bd11] hover:text-[#d36e4b] hover:underline flex items-center gap-0.5 uppercase tracking-wide"
                 >
                   <span>Create new add-on</span>
                   <ArrowRight className="w-3 h-3" />
@@ -855,7 +855,7 @@ export default function AddItemModal({
             {/* Visibility & Availability Controls */}
             <div className="grid grid-cols-2 gap-4 mt-2">
               {/* Visible Switch */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#fdf6f2]/10 border border-gray-100">
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#f2bd11]/5/10 border border-gray-100">
                 <div className="flex flex-col gap-0.5 select-none">
                   <span className="text-xs font-black text-[#2d2d2d]">Visible on Page</span>
                   <span className="text-[8px] text-gray-400 font-bold uppercase">Toggle visibility</span>
@@ -864,7 +864,7 @@ export default function AddItemModal({
                   type="button"
                   onClick={() => setIsVisible(!isVisible)}
                   className={`w-11 h-6 rounded-full transition-all relative outline-none focus:outline-none ${
-                    isVisible ? "bg-[#f7906c]" : "bg-gray-200"
+                    isVisible ? "bg-[#f2bd11]" : "bg-gray-200"
                   }`}
                 >
                   <div
@@ -876,7 +876,7 @@ export default function AddItemModal({
               </div>
 
               {/* Available Switch */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#fdf6f2]/10 border border-gray-100">
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#f2bd11]/5/10 border border-gray-100">
                 <div className="flex flex-col gap-0.5 select-none">
                   <span className="text-xs font-black text-[#2d2d2d]">In Stock / Available</span>
                   <span className="text-[8px] text-gray-400 font-bold uppercase">Toggle ordering</span>
@@ -885,7 +885,7 @@ export default function AddItemModal({
                   type="button"
                   onClick={() => setIsAvailable(!isAvailable)}
                   className={`w-11 h-6 rounded-full transition-all relative outline-none focus:outline-none ${
-                    isAvailable ? "bg-[#f7906c]" : "bg-gray-200"
+                    isAvailable ? "bg-[#f2bd11]" : "bg-gray-200"
                   }`}
                 >
                   <div
@@ -914,7 +914,7 @@ export default function AddItemModal({
             type="button"
             onClick={handleSave}
             disabled={loading}
-            className="flex-1 py-3 bg-[#f7906c] hover:bg-[#e27653] disabled:bg-gray-300 text-white font-black rounded-full text-xs transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider border-0"
+            className="flex-1 py-3 bg-[#f2bd11] hover:bg-[#d4a50e] disabled:bg-gray-300 text-white font-black rounded-full text-xs transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider border-0"
           >
             {loading ? (
               <>

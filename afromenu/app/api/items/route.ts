@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getAuthUser } from "@/lib/supabase-server";
 
 export async function POST(req: Request) {
   console.log("POST /api/items called");
   try {
+    const { user } = await getAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     console.log("Item POST body:", body);
 
@@ -29,6 +35,20 @@ export async function POST(req: Request) {
     } = body;
 
     if (id) {
+      // Authenticate ownership of the existing item
+      const existing = await prisma.item.findUnique({
+        where: { id },
+        include: {
+          category: {
+            include: { establishment: true }
+          }
+        }
+      });
+
+      if (!existing || existing.category.establishment.userId !== user.id) {
+        return NextResponse.json({ error: "Unauthorized: You do not own this establishment" }, { status: 403 });
+      }
+
       // Flexible Update existing
       const updateData: any = {};
       if (name !== undefined) updateData.name = name;
@@ -89,6 +109,17 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
+
+      // Authenticate ownership of target category's establishment
+      const category = await prisma.category.findUnique({
+        where: { id: categoryId },
+        include: { establishment: true }
+      });
+
+      if (!category || category.establishment.userId !== user.id) {
+        return NextResponse.json({ error: "Unauthorized: You do not own this establishment" }, { status: 403 });
+      }
+
       const item = await prisma.item.create({
         data: {
           categoryId,
@@ -128,6 +159,11 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   console.log("DELETE /api/items called");
   try {
+    const { user } = await getAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
@@ -136,6 +172,20 @@ export async function DELETE(req: Request) {
         { error: "Item ID is required" },
         { status: 400 }
       );
+    }
+
+    // Authenticate ownership of the item
+    const existing = await prisma.item.findUnique({
+      where: { id },
+      include: {
+        category: {
+          include: { establishment: true }
+        }
+      }
+    });
+
+    if (!existing || existing.category.establishment.userId !== user.id) {
+      return NextResponse.json({ error: "Unauthorized: You do not own this establishment" }, { status: 403 });
     }
 
     const item = await prisma.item.delete({

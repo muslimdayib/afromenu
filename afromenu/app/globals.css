@@ -4,24 +4,50 @@
 /*  Afromenu Design System — Tailwind v4 Theme Tokens                */
 /* ================================================================== */
 
+:root {
+  --brand: #f2bd11;
+  --brand-secondary: #1b3151;
+  --bg: #f8f9fa;
+  --surface: #ffffff;
+  --surface-2: #f8f7f4;
+  --text: #1b3151;
+  --text-secondary: #6b7280;
+  --border: #e2e8f0;
+  --success: #10b981;
+  --error: #ef4444;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.10);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.15);
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+}
+
 @theme inline {
-  /* Brand color tokens (Premium Afromenu V3 Navy & Gold) */
-  --color-brand: #f2bd11;
-  --color-brand-dark: #1b3151;
-  --color-brand-light: #fef8e3;
+  --color-brand: var(--brand);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-text-main: var(--text);
+  --color-text-sub: var(--text-secondary);
+  --color-border-main: var(--border);
+  --color-success: var(--success);
+  --color-error: var(--error);
   
-  /* Background / surface system */
-  --color-peach: #f8f9fa;
-  --color-surface: #ffffff;
-  --color-card-border: #eeeeee;
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
   
-  /* Typography scale */
-  --color-text-primary: #1b3151;
-  --color-text-secondary: #888888;
-  --color-success: #4caf50;
-  
-  /* Fonts mapped from layout.tsx google font variables */
-  --font-heading: var(--font-poppins), "Poppins", sans-serif;
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  --font-heading: var(--font-plus-jakarta-sans), "Plus Jakarta Sans", sans-serif;
   --font-body: var(--font-inter), "Inter", sans-serif;
 }
 

@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getAuthUser } from "@/lib/supabase-server";
 
 export async function POST(req: Request) {
   console.log("POST /api/categories called");
   try {
+    const { user } = await getAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     console.log("Category POST body:", body);
 
@@ -27,6 +33,16 @@ export async function POST(req: Request) {
     const finalTimeTo = timeTo !== undefined ? timeTo : time_to;
 
     if (id) {
+      // Authenticate ownership of existing category
+      const existing = await prisma.category.findUnique({
+        where: { id },
+        include: { establishment: true }
+      });
+
+      if (!existing || existing.establishment.userId !== user.id) {
+        return NextResponse.json({ error: "Unauthorized: You do not own this establishment" }, { status: 403 });
+      }
+
       // Flexible Update existing
       const updateData: any = {};
       if (name !== undefined) updateData.name = name;
@@ -57,6 +73,16 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
+
+      // Authenticate ownership of target establishment
+      const establishment = await prisma.establishment.findUnique({
+        where: { id: establishmentId }
+      });
+
+      if (!establishment || establishment.userId !== user.id) {
+        return NextResponse.json({ error: "Unauthorized: You do not own this establishment" }, { status: 403 });
+      }
+
       const category = await prisma.category.create({
         data: {
           establishmentId,
@@ -88,6 +114,11 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   console.log("DELETE /api/categories called");
   try {
+    const { user } = await getAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
@@ -96,6 +127,16 @@ export async function DELETE(req: Request) {
         { error: "Category ID is required" },
         { status: 400 }
       );
+    }
+
+    // Authenticate ownership
+    const existing = await prisma.category.findUnique({
+      where: { id },
+      include: { establishment: true }
+    });
+
+    if (!existing || existing.establishment.userId !== user.id) {
+      return NextResponse.json({ error: "Unauthorized: You do not own this establishment" }, { status: 403 });
     }
 
     const category = await prisma.category.delete({

@@ -1,53 +1,22 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
 import { prisma } from "@/lib/prisma";
+import { getAuthUser } from "@/lib/supabase-server";
 
-/**
- * GET /api/establishments/mine
- * Fetches all establishments owned by the currently authenticated user.
- */
 export async function GET(req: Request) {
+  console.log("[GET /api/establishments/mine] called");
+  
   try {
-    // 1. Authenticate Request (Auth Middleware Logic)
-    const authHeader = req.headers.get("authorization");
-    
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { error: "Unauthorized: Missing or malformed authorization token" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.split(" ")[1];
-    
-    // Retrieve the user from Supabase Auth using the JWT token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { user, error: authError } = await getAuthUser();
 
     if (authError || !user) {
+      console.log("[mine] returning 401");
       return NextResponse.json(
-        { 
-          error: "Unauthorized: Invalid or expired token", 
-          details: authError?.message || "Token verification failed" 
-        },
+        { error: "Unauthorized: Invalid or expired session", establishments: [] },
         { status: 401 }
       );
     }
 
-    // Ensure the User record exists in the public.users table to satisfy foreign key constraint
-    await prisma.user.upsert({
-      where: { id: user.id },
-      update: {
-        email: user.email || "",
-        name: user.user_metadata?.name || user.email?.split("@")[0] || "User",
-      },
-      create: {
-        id: user.id,
-        email: user.email || "",
-        name: user.user_metadata?.name || user.email?.split("@")[0] || "User",
-      },
-    });
-
-    // 2. Fetch User Establishments (Prisma Database Call)
+    // Query using the correct Prisma camelCase fields (userId, createdAt)
     const establishments = await prisma.establishment.findMany({
       where: {
         userId: user.id,
@@ -57,7 +26,7 @@ export async function GET(req: Request) {
       },
     });
 
-    // Map Prisma models back to snake_case to preserve 100% frontend compatibility
+    // Map Prisma models back to snake_case to preserve frontend compatibility (user_id, menu_style, created_at)
     const mappedEstablishments = establishments.map((est) => ({
       id: est.id,
       user_id: est.userId,
@@ -66,8 +35,9 @@ export async function GET(req: Request) {
       currency: est.currency,
       currency_symbol: est.currencySymbol,
       language: est.language,
-      template_style: est.templateStyle,
+      menu_style: est.menuStyle,
       brand_color: est.brandColor,
+      brand_color_secondary: est.brandColorSecondary,
       logo_url: est.logoUrl,
       background_url: est.backgroundUrl,
       wifi_password: est.wifiPassword,
@@ -77,21 +47,21 @@ export async function GET(req: Request) {
       created_at: est.createdAt.toISOString(),
     }));
 
-    // 3. Return Successful Response
+    console.log("[mine] found:", mappedEstablishments.length);
+
     return NextResponse.json({
       success: true,
-      establishments: mappedEstablishments || [],
+      establishments: mappedEstablishments,
+    }, {
+      headers: {
+        "Cache-Control": "private, max-age=60"
+      }
     });
 
   } catch (error: any) {
     console.error("Database query failed inside GET /api/establishments/mine:", error);
-    
-    // MUST return a 500 status on database failure as requested
     return NextResponse.json(
-      { 
-        error: "Database connection failed", 
-        details: error.message || "An unexpected error occurred while querying the database." 
-      },
+      { establishments: [], error: error.message || "Internal server error" },
       { status: 500 }
     );
   }

@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { MENU_STYLES } from "@/lib/menu-styles";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -30,89 +32,6 @@ const LANGUAGES = [
   { name: "Swahili (Kiswahili)", code: "Swahili" },
 ];
 
-const TEMPLATES = [
-  {
-    id: "minimalist",
-    name: "Minimalist",
-    desc: "Pure typography, zero images, clean high-contrast spacing.",
-    preview: (
-      <div className="border border-slate-100 rounded-xl p-3 bg-white flex flex-col gap-1.5 h-28 justify-center select-none text-[8px]">
-        <div className="font-bold border-b pb-1 text-slate-800 tracking-wider">MINIMALIST</div>
-        <div className="flex justify-between text-slate-600"><span>1. Espresso Romano</span><span>$3.50</span></div>
-        <div className="flex justify-between text-slate-600"><span>2. Affogato al Caffè</span><span>$4.00</span></div>
-        <div className="flex justify-between text-slate-600"><span>3. Butter Croissant</span><span>$3.00</span></div>
-      </div>
-    )
-  },
-  {
-    id: "visual-grid",
-    name: "Visual Grid",
-    desc: "Modern 2-column image-heavy Instagram style layout.",
-    preview: (
-      <div className="border border-slate-100 rounded-xl p-2.5 bg-slate-50 grid grid-cols-2 gap-1.5 h-28 items-center select-none text-[7px]">
-        <div className="bg-white border border-slate-100 rounded p-1 flex flex-col items-center">
-          <span className="text-xs">🍔</span>
-          <span className="font-bold mt-0.5 text-slate-800 text-[6px]">Burgers</span>
-        </div>
-        <div className="bg-white border border-slate-100 rounded p-1 flex flex-col items-center">
-          <span className="text-xs">🍕</span>
-          <span className="font-bold mt-0.5 text-slate-800 text-[6px]">Pizzas</span>
-        </div>
-        <div className="bg-white border border-slate-100 rounded p-1 flex flex-col items-center">
-          <span className="text-xs">🥤</span>
-          <span className="font-bold mt-0.5 text-slate-800 text-[6px]">Drinks</span>
-        </div>
-        <div className="bg-white border border-slate-100 rounded p-1 flex flex-col items-center">
-          <span className="text-xs">🍰</span>
-          <span className="font-bold mt-0.5 text-slate-800 text-[6px]">Sweets</span>
-        </div>
-      </div>
-    )
-  },
-  {
-    id: "classic-elegant",
-    name: "Classic Elegant",
-    desc: "Serif font, luxury gold borders, and luxury dining feel.",
-    preview: (
-      <div className="border border-amber-200 rounded-xl p-3 bg-[#faf7f2] flex flex-col gap-1 h-28 justify-center items-center text-center select-none text-[8px]">
-        <div className="font-serif italic font-bold text-amber-800">The Castelo Room</div>
-        <div className="text-[6px] text-amber-600/70 border-b border-amber-200/50 pb-0.5 mb-1 tracking-widest">ELEGANT DIARIO</div>
-        <div className="text-slate-700 font-medium">Somali Camel Fillet — $18.00</div>
-        <div className="text-slate-700 font-medium">Saffron Rice Platter — $12.00</div>
-      </div>
-    )
-  },
-  {
-    id: "night-owl",
-    name: "Night Owl",
-    desc: "Midnight Navy/Black theme with glowing premium gold prices.",
-    preview: (
-      <div className="border border-zinc-800 rounded-xl p-3 bg-[#1b3151] flex flex-col gap-1.5 h-28 justify-center select-none text-[8px] text-white">
-        <div className="font-bold border-b border-white/10 pb-1 text-[#f2bd11] tracking-wider">MIDNIGHT LOUNGE</div>
-        <div className="flex justify-between text-zinc-300"><span>1. Charcoal Ribeye</span><span className="text-[#f2bd11] font-bold">$24.00</span></div>
-        <div className="flex justify-between text-zinc-300"><span>2. Smoked Mocktail</span><span className="text-[#f2bd11] font-bold">$7.50</span></div>
-      </div>
-    )
-  },
-  {
-    id: "fast-casual",
-    name: "Fast Casual",
-    desc: "Condensed tight list with left square photo thumbnails.",
-    preview: (
-      <div className="border border-slate-100 rounded-xl p-2 bg-slate-50 flex flex-col gap-1 h-28 justify-center select-none text-[7px]">
-        <div className="bg-white border rounded p-1 flex items-center gap-2">
-          <div className="w-6 h-6 bg-slate-100 rounded flex-shrink-0 flex items-center justify-center">🍔</div>
-          <div className="flex-1 flex justify-between font-bold"><span>Cheese Burger</span><span>$8.99</span></div>
-        </div>
-        <div className="bg-white border rounded p-1 flex items-center gap-2">
-          <div className="w-6 h-6 bg-slate-100 rounded flex-shrink-0 flex items-center justify-center">🍟</div>
-          <div className="flex-1 flex justify-between font-bold"><span>French Fries</span><span>$3.49</span></div>
-        </div>
-      </div>
-    )
-  }
-];
-
 function OnboardingContent() {
   const { user, session } = useAuth();
   const router = useRouter();
@@ -121,51 +40,11 @@ function OnboardingContent() {
   const [slug, setSlug] = useState("");
   const [currencyCode, setCurrencyCode] = useState("SOS");
   const [language, setLanguage] = useState("Somali");
-  const [templateStyle, setTemplateStyle] = useState("minimalist");
+  const [menuStyle, setMenuStyle] = useState("luxury-dark");
   const [loading, setLoading] = useState(false);
-  const [checkingExisting, setCheckingExisting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check if owner already has an establishment, if so, redirect immediately in the background
-  useEffect(() => {
-    async function checkExistingEstablishment() {
-      if (!user) return;
 
-      try {
-        let token = session?.access_token;
-        if (!token) {
-          const { data: sessionData } = await supabase.auth.getSession();
-          token = sessionData.session?.access_token;
-        }
-
-        if (!token) return;
-
-        const res = await fetch("/api/establishments/mine", {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        });
-
-        if (!res.ok) return;
-
-        const responseData = await res.json();
-        const establishments = responseData.establishments;
-
-        const searchParams = new URLSearchParams(window.location.search);
-        const isForceNew = searchParams.get("new") === "true";
-
-        if (!isForceNew && establishments && establishments.length > 0) {
-          console.log("Establishment found. Redirecting to dashboard.");
-          router.push("/dashboard");
-        }
-      } catch (err) {
-        console.error("Silent error checking existing establishment:", err);
-      }
-    }
-
-    checkExistingEstablishment();
-  }, [user, session, router]);
 
   // Slugify Helper: lowercase, hyphens, alphanumeric
   const slugify = (text: string) => {
@@ -216,28 +95,18 @@ function OnboardingContent() {
     setLoading(true);
 
     try {
-      let token = session?.access_token;
-      if (!token) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        token = sessionData.session?.access_token;
-      }
-
-      if (!token) {
-        throw new Error("No active session token found. Please log in again.");
-      }
-
       const res = await fetch("/api/establishments", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           name,
           slug,
           currencyCode,
           language,
-          templateStyle,
+          menuStyle,
         }),
       });
 
@@ -247,36 +116,19 @@ function OnboardingContent() {
         throw new Error(responseData.error || responseData.details || "Failed to save establishment.");
       }
 
-      if (responseData.success) {
+      if (responseData.success && responseData.establishment) {
+        router.push(`/p/${responseData.establishment.slug}`);
+      } else {
         router.push("/dashboard");
       }
     } catch (err: any) {
       setError(err?.message || "Something went wrong.");
-    } finally {
+      alert("Error: " + (err?.message || "Launch failed."));
       setLoading(false);
     }
   };
 
-  if (checkingExisting) {
-    return (
-      <div className="min-h-screen bg-[#1b3151] flex flex-col items-center justify-center text-white">
-        <div className="relative w-12 h-12 mb-4">
-          <div className="absolute inset-0 rounded-full border-4 border-[#f2bd11]/20"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-t-[#f2bd11] animate-spin"></div>
-        </div>
-        <p className="font-heading font-semibold text-sm text-slate-300">
-          Checking for active menus...
-        </p>
-        <button
-          type="button"
-          onClick={() => setCheckingExisting(false)}
-          className="mt-6 text-xs text-[#f2bd11]/70 hover:text-[#f2bd11] transition-colors underline cursor-pointer font-semibold"
-        >
-          Bypass Loading
-        </button>
-      </div>
-    );
-  }
+
 
   const originUrl = typeof window !== "undefined" ? window.location.origin : "afromenu.com";
 
@@ -286,12 +138,14 @@ function OnboardingContent() {
       {/* Onboarding Header */}
       <header className="max-w-4xl w-full mx-auto flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-[#1b3151] flex items-center justify-center text-[#f2bd11] font-bold shadow-md">
-            <Utensils className="w-5 h-5" />
-          </div>
-          <span className="font-heading font-extrabold text-xl text-[#1b3151]">
-            Afromenu
-          </span>
+          <Image
+            src="/logo.png"
+            alt="Afromenu"
+            width={140}
+            height={40}
+            priority
+            className="h-10 w-auto"
+          />
         </div>
 
         {/* Step Indicators */}
@@ -438,17 +292,20 @@ function OnboardingContent() {
 
               {/* Selector Carousel Column Grid */}
               <div className="flex flex-col gap-4">
-                {TEMPLATES.map((tpl) => {
-                  const isSelected = templateStyle === tpl.id;
+                {MENU_STYLES.map((style) => {
+                  const isSelected = menuStyle === style.id;
                   return (
                     <button
-                      key={tpl.id}
+                      key={style.id}
                       type="button"
-                      onClick={() => setTemplateStyle(tpl.id)}
-                      className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex flex-col sm:flex-row gap-4 items-center ${
+                      disabled={!style.isAvailable}
+                      onClick={() => style.isAvailable && setMenuStyle(style.id)}
+                      className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex flex-col sm:flex-row gap-4 items-center relative ${
                         isSelected
                           ? "border-[#f2bd11] bg-[#f2bd11]/5 shadow-sm"
-                          : "border-slate-100 hover:border-slate-200 bg-white"
+                          : style.isAvailable
+                            ? "border-slate-100 hover:border-slate-200 bg-white"
+                            : "border-slate-100 bg-slate-50/50 opacity-50 cursor-not-allowed"
                       }`}
                     >
                       {/* Left info */}
@@ -462,15 +319,35 @@ function OnboardingContent() {
                             {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[#1b3151]" />}
                           </span>
                           <span className="font-heading font-extrabold text-sm text-[#1b3151]">
-                            {tpl.name}
+                            {style.name}
                           </span>
+                          {!style.isAvailable && (
+                            <span className="text-[8px] uppercase tracking-widest bg-[#1b3151] text-white px-2 py-0.5 rounded-full font-bold ml-1">
+                              Soon
+                            </span>
+                          )}
+                          {isSelected && (
+                            <span className="text-[8px] uppercase tracking-widest bg-[#f2bd11] text-[#1b3151] px-2 py-0.5 rounded-full font-extrabold ml-1">
+                              Active
+                            </span>
+                          )}
                         </div>
-                        <p className="text-xs text-slate-500 leading-normal">{tpl.desc}</p>
+                        <p className="text-xs text-slate-500 leading-normal">{style.description}</p>
                       </div>
 
                       {/* Right HTML Mini Preview */}
                       <div className="w-full sm:w-44 flex-shrink-0">
-                        {tpl.preview}
+                        <div className={`h-20 rounded-xl flex items-center justify-center transition-all ${
+                          style.id === 'luxury-dark' 
+                            ? 'bg-gradient-to-tr from-neutral-950 to-neutral-900 border border-gold-500/10'
+                            : 'bg-slate-100 border border-slate-200'
+                        }`}>
+                          {style.id === 'luxury-dark' ? (
+                            <span className="text-[#dac063] text-sm animate-pulse-slow font-bold font-serif">✦ luxury ✦</span>
+                          ) : (
+                            <span className="text-slate-400 text-[10px] font-semibold">Coming Soon</span>
+                          )}
+                        </div>
                       </div>
                     </button>
                   );
@@ -525,7 +402,7 @@ function OnboardingContent() {
                 </div>
                 <div className="flex justify-between">
                   <span className="font-semibold">Active Style:</span>
-                  <span className="font-bold text-slate-700 capitalize">{templateStyle.replace("-", " ")}</span>
+                  <span className="font-bold text-slate-700 capitalize">{menuStyle.replace("-", " ")}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="font-semibold">Primary Currency:</span>

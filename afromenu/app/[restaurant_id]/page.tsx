@@ -121,9 +121,12 @@ export default async function RestaurantPage({ params }: PageProps) {
       )}
 
       <footer className="py-6 text-center border-t border-border">
-        <p className="text-xs text-cream-muted">
+        <p className="text-xs text-cream-muted flex items-center justify-center gap-1">
           Powered by{" "}
-          <span className="text-gold-500 font-semibold">Afromenu</span>
+          <span className="text-gold-500 font-semibold flex items-center gap-1">
+            <img src="/icon.png" alt="Afromenu Logo" className="w-3.5 h-3.5 object-contain inline" />
+            Afromenu
+          </span>
         </p>
       </footer>
     </div>

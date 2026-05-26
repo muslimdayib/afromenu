@@ -216,7 +216,7 @@ export default function AddCategoryModal({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-5 top-5 w-8 h-8 rounded-full bg-slate-50 hover:bg-[#f7906c]/10 flex items-center justify-center text-gray-400 hover:text-[#f7906c] transition-all"
+          className="absolute right-5 top-5 w-8 h-8 rounded-full bg-slate-50 hover:bg-[#f2bd11]/10 flex items-center justify-center text-gray-400 hover:text-[#f2bd11] transition-all"
         >
           <X className="w-4 h-4" />
         </button>
@@ -241,7 +241,7 @@ export default function AddCategoryModal({
           {/* FIELD 1: Category Name */}
           <div>
             <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">
-              Category Name <span className="text-[#f7906c] font-black">*</span>
+              Category Name <span className="text-[#f2bd11] font-black">*</span>
             </label>
             <input
               type="text"
@@ -249,7 +249,7 @@ export default function AddCategoryModal({
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Burgers, Salads, Drinks"
               required
-              className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f7906c] focus:ring-2 focus:ring-[#f7906c]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#fdf6f2]/20 font-bold transition-all placeholder:text-gray-300"
+              className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:ring-2 focus:ring-[#f2bd11]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 font-bold transition-all placeholder:text-gray-300"
             />
           </div>
 
@@ -273,7 +273,7 @@ export default function AddCategoryModal({
                     }}
                     className={`px-3 py-2 text-[10px] font-black rounded-full border transition-all select-none uppercase tracking-wide cursor-pointer ${
                       isSelected
-                        ? "bg-[#f7906c] border-[#f7906c] text-white shadow-sm"
+                        ? "bg-[#f2bd11] border-[#f2bd11] text-white shadow-sm"
                         : "bg-white border-gray-100 text-gray-400 hover:text-gray-600 hover:border-gray-200"
                     }`}
                   >
@@ -288,8 +288,8 @@ export default function AddCategoryModal({
                 onClick={() => setIsNewSection(true)}
                 className={`px-3 py-2 text-[10px] font-black rounded-full border transition-all flex items-center gap-1 cursor-pointer ${
                   isNewSection
-                    ? "bg-[#f7906c] border-[#f7906c] text-white shadow-sm"
-                    : "bg-slate-50 border-gray-100 text-[#f7906c] hover:bg-orange-50 hover:border-[#f7906c]/30"
+                    ? "bg-[#f2bd11] border-[#f2bd11] text-white shadow-sm"
+                    : "bg-slate-50 border-gray-100 text-[#f2bd11] hover:bg-amber-50 hover:border-[#f2bd11]/30"
                 }`}
               >
                 <Plus className="w-3 h-3" />
@@ -306,7 +306,7 @@ export default function AddCategoryModal({
                   onChange={(e) => setNewSectionInput(e.target.value)}
                   placeholder="Type new section name (e.g. Desserts)"
                   required
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-100 focus:border-[#f7906c] focus:outline-none text-xs text-[#2d2d2d] bg-[#fdf6f2]/10 font-semibold"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/10 font-semibold"
                 />
               </div>
             )}
@@ -320,14 +320,14 @@ export default function AddCategoryModal({
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Uploader Box */}
-              <div className="relative border-2 border-dashed border-gray-100 hover:border-[#f7906c]/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all h-[120px] bg-[#fdf6f2]/10 hover:bg-[#fdf6f2]/30 group">
+              <div className="relative border-2 border-dashed border-gray-100 hover:border-[#f2bd11]/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all h-[120px] bg-[#f2bd11]/5/10 hover:bg-[#f2bd11]/5/30 group">
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
                   className="absolute inset-0 opacity-0 cursor-pointer z-10"
                 />
-                <Upload className="w-6 h-6 text-[#f7906c] mb-2 group-hover:scale-105 transition-transform" />
+                <Upload className="w-6 h-6 text-[#f2bd11] mb-2 group-hover:scale-105 transition-transform" />
                 <span className="text-[11px] font-black text-[#2d2d2d]">Upload category photo</span>
                 <span className="text-[8px] text-gray-400 mt-1 uppercase font-bold">PNG, JPG up to 5MB</span>
               </div>
@@ -369,7 +369,7 @@ export default function AddCategoryModal({
                     key={idx}
                     type="button"
                     onClick={() => selectPreset(p)}
-                    className="w-12 h-10 rounded-xl overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f7906c] focus:outline-none transition-all shadow-sm active:scale-95"
+                    className="w-12 h-10 rounded-xl overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f2bd11] focus:outline-none transition-all shadow-sm active:scale-95"
                   >
                     <img src={p} alt="Preset cover" className="w-full h-full object-cover" />
                   </button>
@@ -381,7 +381,7 @@ export default function AddCategoryModal({
           {/* FIELD 4: Time availability */}
           <div className="flex flex-col gap-2 border-t border-gray-50 pt-4">
             <div className="flex items-center gap-1.5 text-gray-500">
-              <Clock className="w-4 h-4 text-[#f7906c]" />
+              <Clock className="w-4 h-4 text-[#f2bd11]" />
               <span className="text-[10px] font-black uppercase tracking-wider">Available hours (optional)</span>
             </div>
 
@@ -394,7 +394,7 @@ export default function AddCategoryModal({
                   type="time"
                   value={timeFrom}
                   onChange={(e) => setTimeFrom(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-100 focus:border-[#f7906c] focus:outline-none text-xs text-[#2d2d2d] bg-[#fdf6f2]/10 font-bold"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/10 font-bold"
                 />
               </div>
               <div>
@@ -405,7 +405,7 @@ export default function AddCategoryModal({
                   type="time"
                   value={timeTo}
                   onChange={(e) => setTimeTo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-100 focus:border-[#f7906c] focus:outline-none text-xs text-[#2d2d2d] bg-[#fdf6f2]/10 font-bold"
+                  className="w-full px-3 py-2 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/10 font-bold"
                 />
               </div>
             </div>
@@ -426,7 +426,7 @@ export default function AddCategoryModal({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 bg-[#f7906c] hover:bg-[#e27653] disabled:bg-gray-300 text-white font-black rounded-full text-xs uppercase tracking-wider transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer border-0"
+              className="flex-1 py-3 bg-[#f2bd11] hover:bg-[#d4a50e] disabled:bg-gray-300 text-white font-black rounded-full text-xs uppercase tracking-wider transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer border-0"
             >
               {loading ? (
                 <>

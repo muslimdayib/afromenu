@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { Menu, X, Utensils } from "lucide-react";
 
@@ -29,12 +30,14 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 rounded-xl bg-[#1b3151] flex items-center justify-center text-[#f2bd11] font-bold transition-transform duration-300 group-hover:scale-105 shadow-md">
-            <Utensils className="w-5 h-5" />
-          </div>
-          <span className="font-heading font-extrabold text-2xl tracking-tight text-[#1b3151]">
-            Afro<span className="text-[#f2bd11]">menu</span>
-          </span>
+          <Image
+            src="/logo.png"
+            alt="Afromenu"
+            width={140}
+            height={40}
+            priority
+            className="h-10 w-auto"
+          />
         </Link>
 
         {/* Desktop Links */}

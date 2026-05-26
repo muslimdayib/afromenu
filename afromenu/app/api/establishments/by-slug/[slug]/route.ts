@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { seedEstablishmentData } from "@/lib/seed";
 
 export async function GET(
   req: Request,
@@ -41,62 +42,7 @@ export async function GET(
     if (categories.length === 0) {
       console.log("Seeding sample data for new establishment:", establishment.id);
       try {
-        const sampleFood = await prisma.category.create({
-          data: {
-            establishmentId: establishment.id,
-            name: "FOOD",
-            sectionName: "Food",
-            imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&auto=format&fit=crop&q=60",
-            sortOrder: 0,
-            isVisible: true,
-          },
-        });
-
-        await prisma.item.createMany({
-          data: [
-            {
-              categoryId: sampleFood.id,
-              name: "Sample Burger",
-              price: 5.00,
-              description: "Edit this item",
-              sortOrder: 0,
-              isAvailable: true,
-              isVisible: true,
-            },
-            {
-              categoryId: sampleFood.id,
-              name: "Sample Pizza",
-              price: 8.00,
-              description: "Edit this item",
-              sortOrder: 1,
-              isAvailable: true,
-              isVisible: true,
-            },
-          ],
-        });
-
-        const sampleDrinks = await prisma.category.create({
-          data: {
-            establishmentId: establishment.id,
-            name: "DRINKS",
-            sectionName: "Drinks",
-            imageUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600&auto=format&fit=crop&q=60",
-            sortOrder: 1,
-            isVisible: true,
-          },
-        });
-
-        await prisma.item.create({
-          data: {
-            categoryId: sampleDrinks.id,
-            name: "Sample Coffee",
-            price: 2.00,
-            description: "Edit this item",
-            sortOrder: 0,
-            isAvailable: true,
-            isVisible: true,
-          },
-        });
+        await seedEstablishmentData(establishment.id);
 
         // Re-fetch categories
         categories = await prisma.category.findMany({
@@ -136,8 +82,8 @@ export async function GET(
       currency: establishment.currency,
       currency_symbol: establishment.currencySymbol,
       language: establishment.language,
-      template_style: establishment.templateStyle,
       brand_color: establishment.brandColor,
+      brand_color_secondary: establishment.brandColorSecondary,
       logo_url: establishment.logoUrl,
       background_url: establishment.backgroundUrl,
       wifi_password: establishment.wifiPassword,
@@ -147,6 +93,19 @@ export async function GET(
       created_at: establishment.createdAt.toISOString(),
       theme: establishment.theme,
       menu_style: establishment.menuStyle,
+      tagline: establishment.tagline,
+      address: establishment.address,
+      website_url: establishment.websiteUrl,
+      instagram_url: establishment.instagramUrl,
+      tiktok_url: establishment.tiktokUrl,
+      facebook_url: establishment.facebookUrl,
+      twitter_url: establishment.twitterUrl,
+      snapchat_url: establishment.snapchatUrl,
+      whatsapp: establishment.whatsapp,
+      google_review: establishment.googleReview,
+      tripadvisor_url: establishment.tripadvisorUrl,
+      show_reviews: establishment.showReviews,
+      review_style: establishment.reviewStyle,
     };
 
     const mappedCategories = categories.map((cat) => ({
@@ -205,6 +164,10 @@ export async function GET(
       establishment: mappedEstablishment,
       categories: mappedCategories,
       items: mappedItems,
+    }, {
+      headers: {
+        'Cache-Control': 'private, max-age=60'
+      }
     });
 
   } catch (error: any) {

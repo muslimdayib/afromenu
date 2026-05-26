@@ -218,7 +218,7 @@ export default function ItemDetailModal({
                       <div key={gIdx} className="bg-white border border-gray-200 p-3.5 rounded-2xl shadow-sm">
                         <h5 className="font-extrabold text-xs text-[#1b3151] mb-2 flex justify-between">
                           <span>{g.name}</span>
-                          {g.mandatory && <span className="text-[8px] text-[#f7906c] font-black uppercase">Required</span>}
+                          {g.mandatory && <span className="text-[8px] text-[#f2bd11] font-black uppercase">Required</span>}
                         </h5>
                         <div className="flex flex-col gap-2">
                           {g.options?.map((opt: any, oIdx: number) => (

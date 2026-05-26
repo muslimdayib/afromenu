@@ -1,37 +1,47 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
 import { prisma } from "@/lib/prisma";
+import { seedEstablishmentData } from "@/lib/seed";
+import { getAuthUser } from "@/lib/supabase-server";
 
 export async function POST(req: Request) {
-  console.log("POST /api/establishments called");
+  console.log("[POST /api/establishments] called");
+  
   try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json(
-        { error: "Unauthorized: Missing token" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.split(" ")[1];
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { user, error: authError } = await getAuthUser();
 
     if (authError || !user) {
+      console.log("[POST] returning 401");
       return NextResponse.json(
-        { error: "Unauthorized: Invalid token" },
+        { error: "Unauthorized: Invalid token or session" },
         { status: 401 }
       );
     }
 
     const body = await req.json();
-    console.log("Onboarding POST body:", body);
+    console.log("[POST] body:", body);
 
-    const { name, slug, currencyCode, language, templateStyle } = body;
+    const name = body.name;
+    const slug = body.slug;
+    const currencyCode = body.currencyCode || body.currency || "SOS";
+    const language = body.language || "English";
+    const menuStyle = body.menuStyle || body.menu_style || "luxury-dark";
 
     if (!name || !slug) {
       return NextResponse.json(
         { error: "Name and slug are required" },
         { status: 400 }
+      );
+    }
+
+    // Check if slug already exists
+    const existing = await prisma.establishment.findUnique({
+      where: { slug: slug }
+    });
+    
+    if (existing) {
+      return NextResponse.json(
+        { error: "URL slug already taken. Choose another." },
+        { status: 409 }
       );
     }
 
@@ -46,7 +56,7 @@ export async function POST(req: Request) {
       { name: "Saudi Riyal", code: "SAR", symbol: "ر.س" },
       { name: "Turkish Lira", code: "TRY", symbol: "₺" },
       { name: "Egyptian Pound", code: "EGP", symbol: "E£" },
-    ].find((c) => c.code === currencyCode);
+    ].find((c) => c.code === currencyCode || c.name === currencyCode);
 
     const symbol = selectedCurrencyObj ? selectedCurrencyObj.symbol : "$";
     const currencyLabel = selectedCurrencyObj ? selectedCurrencyObj.name : "US Dollar";
@@ -65,7 +75,7 @@ export async function POST(req: Request) {
       },
     });
 
-    // Write directly to database via Prisma (bypassing client-side RLS!)
+    // Create the establishment
     const establishment = await prisma.establishment.create({
       data: {
         userId: user.id,
@@ -73,13 +83,17 @@ export async function POST(req: Request) {
         slug,
         currency: currencyLabel,
         currencySymbol: symbol,
-        language: language || "English",
-        templateStyle: templateStyle || "minimalist",
-        brandColor: "#f7906c", // Matching the new brand color
+        language: language,
+        menuStyle: menuStyle,
+        brandColor: "#f2bd11",
+        brandColorSecondary: "#1b3151",
       },
     });
 
-    console.log("Database write success:", establishment);
+    // Automatically seed default sample menu data for new establishment
+    await seedEstablishmentData(establishment.id);
+
+    console.log("[POST] created:", establishment.id);
 
     return NextResponse.json({
       success: true,
@@ -92,7 +106,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error("FULL ERROR:", error);
+    console.error("[POST] error:", error.message);
     return NextResponse.json(
       {
         error: error.message || "Database write failed",
