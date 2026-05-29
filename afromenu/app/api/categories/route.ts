@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/supabase-server";
 
@@ -154,5 +154,18 @@ export async function DELETE(req: Request) {
       },
       { status: 500 }
     );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const categories = await prisma.category.findMany()
+    return NextResponse.json({ categories })
+  } catch (err: any) {
+    console.error('Categories error:', err.message)
+    return NextResponse.json(
+      { error: err.message, categories: [] },
+      { status: 500 }
+    )
   }
 }
