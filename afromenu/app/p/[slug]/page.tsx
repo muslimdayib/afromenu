@@ -306,7 +306,7 @@ export default function HybridMenuPage() {
   const fetchMenuData = async () => {
     try {
       setError(null);
-      const res = await fetch(`/api/establishments/by-slug/${slug}`);
+      const res = await fetch(`/api/menu/${slug}`);
       
       if (!res.ok) {
         if (res.status === 404) {
@@ -316,11 +316,25 @@ export default function HybridMenuPage() {
         throw new Error(`Failed to load menu: ${res.statusText}`);
       }
 
-      const data = await res.json();
+      let data = await res.json();
       
       if (!data.success || !data.establishment) {
         setEstablishment(null);
         return;
+      }
+
+      // Check if logged-in user owns it. If so, fetch full (hidden/unavailable) items and categories
+      if (user && user.id === data.establishment.user_id) {
+        setIsOwner(true);
+        const ownerRes = await fetch(`/api/establishments/by-slug/${slug}`);
+        if (ownerRes.ok) {
+          const ownerData = await ownerRes.json();
+          if (ownerData.success && ownerData.establishment) {
+            data = ownerData;
+          }
+        }
+      } else {
+        setIsOwner(false);
       }
 
       setEstablishment(data.establishment);
@@ -330,13 +344,6 @@ export default function HybridMenuPage() {
       }
       setCategories(data.categories || []);
       setItems(data.items || []);
-
-      // Check if logged-in user owns it
-      if (user && user.id === data.establishment.user_id) {
-        setIsOwner(true);
-      } else {
-        setIsOwner(false);
-      }
     } catch (err: any) {
       console.error("Error loading menu data:", err);
       setError(err?.message || "Could not load menu");

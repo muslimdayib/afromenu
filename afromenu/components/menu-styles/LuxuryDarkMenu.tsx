@@ -29,6 +29,12 @@ export default function LuxuryDarkMenu({ establishment, categories, items }: Lux
   const goldColor = establishment.brand_color || '#dac063';
   const goldSecondaryColor = establishment.brand_color_secondary || '#1b3151';
   
+  const coverImage = establishment.background_url;
+  const isRealCover = coverImage && 
+    !coverImage.includes('placeholder') &&
+    !coverImage.includes('via.placeholder') &&
+    !coverImage.includes('afromenu-qr');
+  
   const hexToRgb = (hex: string) => {
     const cleaned = (hex || '#dac063').replace("#", "");
     if (cleaned.length !== 6 && cleaned.length !== 3) return "218, 192, 99";
@@ -46,17 +52,22 @@ export default function LuxuryDarkMenu({ establishment, categories, items }: Lux
   } as React.CSSProperties;
 
   // Filter items in the menu
-  const displayedItems = items
-    .filter((item) => item.isVisible !== false && (item.is_visible !== false))
-    .filter((item) => activeCategory === "all" || item.category_id === activeCategory)
-    .filter((item) => {
-      if (!guestSearchQuery) return true;
-      const q = guestSearchQuery.toLowerCase();
-      return (
-        item.name.toLowerCase().includes(q) ||
-        (item.description && item.description.toLowerCase().includes(q))
-      );
-    });
+  const displayedItems = items.filter(item => {
+    // Visibility / Availability safety check
+    const isAvailable = item.isAvailable !== false && item.is_available !== false;
+    const isVisible = item.isVisible !== false && item.is_visible !== false;
+    
+    // Category filter
+    const categoryMatch = activeCategory === 'all' || 
+      item.category_id === activeCategory;
+    
+    // Search filter
+    const searchMatch = !guestSearchQuery || 
+      item.name.toLowerCase().includes(guestSearchQuery.toLowerCase()) ||
+      item.description?.toLowerCase().includes(guestSearchQuery.toLowerCase());
+    
+    return isAvailable && isVisible && categoryMatch && searchMatch;
+  });
 
   return (
     <div
@@ -129,22 +140,66 @@ export default function LuxuryDarkMenu({ establishment, categories, items }: Lux
         <div id="scroll-container" className="flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col custom-scroll pb-24 scrollbar-none">
             
             {/* HERO COVER COVER */}
-            <div className="relative h-64 w-full shrink-0">
-                <img src={establishment.background_url || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80"} 
-                     alt={establishment.name} 
-                     className="w-full h-full object-cover" />
-                {/* Smooth vignette & color gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-black/60"></div>
-                
-                {/* Floating Header controls */}
-                <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
-                    <span className="glass-panel-light text-[10px] uppercase tracking-widest px-3 py-1 rounded-full font-semibold" style={{ color: 'var(--gold)' }}>
-                        ✦ Premium Experience
-                    </span>
-                    <div className="glass-panel-light text-xs text-white px-3 py-1 rounded-full flex items-center space-x-1">
-                        <span>EN</span>
-                    </div>
+            <div style={{
+              height: 200,
+              position: 'relative',
+              overflow: 'hidden',
+            }} className="w-full shrink-0">
+              {isRealCover ? (
+                <img
+                  src={coverImage}
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'cover' 
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: '100%',
+                  height: '100%',
+                  background: `linear-gradient(
+                    135deg,
+                    #0a0a0b 0%,
+                    #1a1a2e 40%,
+                    #16213e 70%,
+                    #0f3460 100%
+                  )`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  {/* Decorative pattern */}
+                  <div style={{
+                    position: 'absolute',
+                    inset: 0,
+                    backgroundImage: `radial-gradient(
+                      circle at 30% 50%, 
+                      rgba(${hexToRgb(goldColor)}, 0.15) 0%, 
+                      transparent 60%
+                    )`,
+                  }} />
                 </div>
+              )}
+              {/* Dark overlay at bottom */}
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 80,
+                background: 'linear-gradient(transparent, #0a0a0b)',
+              }} />
+
+              {/* Floating Header controls */}
+              <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
+                  <span className="glass-panel-light text-[10px] uppercase tracking-widest px-3 py-1 rounded-full font-semibold" style={{ color: 'var(--gold)' }}>
+                      ✦ Premium Experience
+                  </span>
+                  <div className="glass-panel-light text-xs text-white px-3 py-1 rounded-full flex items-center space-x-1">
+                      <span>EN</span>
+                  </div>
+              </div>
             </div>
 
             {/* PROFILE SECTION */}
@@ -281,13 +336,50 @@ export default function LuxuryDarkMenu({ establishment, categories, items }: Lux
                       {/* Category Quick Filter Horizontal Scroll */}
                       {categories.length > 0 && (
                         <div className="flex space-x-2 overflow-x-auto pb-2 -mx-5 px-5 custom-scroll scrollbar-none">
-                            <button onClick={() => setActiveCategory('all')} 
-                                    className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-medium border transition cursor-pointer ${activeCategory === 'all' ? 'bg-gold-400/10 text-gold-300 border-gold-500/20' : 'bg-neutral-900 text-neutral-400 border-neutral-800'}`} style={activeCategory === 'all' ? { color: 'var(--gold)', borderColor: 'rgba(var(--gold-rgb), 0.2)', backgroundColor: 'rgba(var(--gold-rgb), 0.1)' } : {}}>
+                            <button
+                              onClick={() => setActiveCategory('all')}
+                              style={{
+                                background: activeCategory === 'all' 
+                                  ? goldColor 
+                                  : 'rgba(255,255,255,0.08)',
+                                color: activeCategory === 'all' 
+                                  ? '#0a0a0b' 
+                                  : 'rgba(255,255,255,0.7)',
+                                border: activeCategory === 'all' 
+                                  ? 'none' 
+                                  : '1px solid rgba(255,255,255,0.15)',
+                                borderRadius: 99,
+                                padding: '8px 16px',
+                                fontSize: 13,
+                                fontWeight: activeCategory === 'all' ? 700 : 500,
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
                               All
                             </button>
                             {categories.map((cat) => (
-                              <button key={cat.id} onClick={() => setActiveCategory(cat.id)} 
-                                      className={`shrink-0 px-4 py-1.5 rounded-full text-xs font-medium border transition cursor-pointer ${activeCategory === cat.id ? 'bg-gold-400/10 text-gold-300 border-gold-500/20' : 'bg-neutral-900 text-neutral-400 border-neutral-800'}`} style={activeCategory === cat.id ? { color: 'var(--gold)', borderColor: 'rgba(var(--gold-rgb), 0.2)', backgroundColor: 'rgba(var(--gold-rgb), 0.1)' } : {}}>
+                              <button
+                                key={cat.id}
+                                onClick={() => setActiveCategory(cat.id)}
+                                style={{
+                                  background: activeCategory === cat.id 
+                                    ? goldColor 
+                                    : 'rgba(255,255,255,0.08)',
+                                  color: activeCategory === cat.id 
+                                    ? '#0a0a0b' 
+                                    : 'rgba(255,255,255,0.7)',
+                                  border: activeCategory === cat.id 
+                                    ? 'none' 
+                                    : '1px solid rgba(255,255,255,0.15)',
+                                  borderRadius: 99,
+                                  padding: '8px 16px',
+                                  fontSize: 13,
+                                  fontWeight: activeCategory === cat.id ? 700 : 500,
+                                  cursor: 'pointer',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
                                 {cat.name}
                               </button>
                             ))}
@@ -297,47 +389,89 @@ export default function LuxuryDarkMenu({ establishment, categories, items }: Lux
                       {/* MENU ITEMS GRID */}
                       <div className="space-y-4">
                           {displayedItems.length === 0 ? (
-                            <div className="glass-panel p-8 text-center rounded-2xl">
-                                <span className="text-xs text-neutral-500">No dishes match your selection.</span>
+                            <div style={{ textAlign: 'center', padding: 40 }} className="glass-panel rounded-2xl">
+                              <div style={{ fontSize: 40, marginBottom: 12 }}>🍽️</div>
+                              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>
+                                No items in this category yet
+                              </p>
                             </div>
                           ) : (
                             displayedItems.map((item) => (
-                              <div key={item.id} onClick={() => setSelectedItem(item)} className="glass-panel rounded-2xl overflow-hidden transition duration-300 hover:scale-[1.01] active:scale-[0.99] flex flex-col cursor-pointer">
-                                  {item.imageUrl && (
-                                    <div className="relative h-44 w-full bg-neutral-900">
-                                        <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/90 to-transparent"></div>
+                              <div
+                                key={item.id}
+                                onClick={() => setSelectedItem(item)}
+                                className="glass-panel rounded-2xl overflow-hidden transition duration-300 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 12,
+                                  padding: '16px',
+                                  borderBottom: '1px solid rgba(255,255,255,0.06)',
+                                }}
+                              >
+                                {/* Item details on the LEFT side */}
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ 
+                                    fontSize: 16, 
+                                    fontWeight: 700, 
+                                    color: 'white',
+                                    marginBottom: 4,
+                                  }}>
+                                    {item.name}
+                                  </div>
+                                  <div style={{ 
+                                    fontSize: 12, 
+                                    color: 'rgba(255,255,255,0.5)',
+                                    marginBottom: 8,
+                                    lineHeight: 1.5,
+                                  }}>
+                                    {item.description}
+                                  </div>
+                                  <div style={{ 
+                                    color: goldColor, 
+                                    fontWeight: 700, 
+                                    fontSize: 15 
+                                  }}>
+                                    {Number(item.price || 0).toFixed(2)} {establishment.currency_symbol || '$'}
+                                  </div>
+                                </div>
+                                
+                                {/* Item photo on the RIGHT side */}
+                                <div style={{
+                                  width: 80,
+                                  height: 80,
+                                  borderRadius: 12,
+                                  overflow: 'hidden',
+                                  flexShrink: 0,
+                                  background: 'rgba(255,255,255,0.05)',
+                                }}>
+                                  {item.image_url ? (
+                                    <img
+                                      src={item.image_url}
+                                      alt={item.name}
+                                      style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                      }}
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = 'none'
+                                      }}
+                                    />
+                                  ) : (
+                                    <div style={{
+                                      width: '100%',
+                                      height: '100%',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: 28,
+                                      background: 'rgba(218,192,99,0.1)',
+                                    }}>
+                                      🍽️
                                     </div>
                                   )}
-                                  <div className="p-4 flex-1 flex flex-col justify-between">
-                                      <div>
-                                          <div className="flex justify-between items-start gap-4">
-                                              <h3 className="font-serif-lux text-lg font-medium text-white">{item.name}</h3>
-                                              <span className="text-sm font-semibold whitespace-nowrap" style={{ color: 'var(--gold)' }}>
-                                                {Number(item.price || 0).toFixed(2)} {establishment.currency_symbol || '$'}
-                                              </span>
-                                          </div>
-                                          {item.description && (
-                                            <p className="text-xs text-neutral-400 mt-1.5 leading-relaxed">{item.description}</p>
-                                          )}
-                                      </div>
-                                      <div className="flex justify-between items-center mt-4 pt-3 border-t border-neutral-900/60">
-                                          <div className="flex space-x-1">
-                                              {item.weight && (
-                                                <span className="text-[9px] bg-neutral-900 text-neutral-400 px-2 py-0.5 rounded-md font-mono">{item.weight}</span>
-                                              )}
-                                              {item.oldPrice && (
-                                                <span className="text-[9px] bg-neutral-900 text-neutral-500 line-through px-2 py-0.5 rounded-md font-mono">
-                                                  {Number(item.oldPrice).toFixed(2)} {establishment.currency_symbol || '$'}
-                                                </span>
-                                              )}
-                                          </div>
-                                          <button className="text-xs font-semibold tracking-wider flex items-center space-x-1 cursor-pointer" style={{ color: 'var(--gold)' }}>
-                                              <span>View Details</span>
-                                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                                          </button>
-                                      </div>
-                                  </div>
+                                </div>
                               </div>
                             ))
                           )}
@@ -508,60 +642,117 @@ export default function LuxuryDarkMenu({ establishment, categories, items }: Lux
 
         {/* ================== PRODUCT DETAIL MODAL OVERLAY ================== */}
         {selectedItem && (
-          <div className="absolute inset-0 bg-black/85 backdrop-blur-sm z-50 flex flex-col justify-end transition-all duration-300">
-              <div className="bg-neutral-950 border-t rounded-t-[30px] p-6 text-left max-h-[80%] overflow-y-auto transform translate-y-0 transition-transform duration-300 flex flex-col justify-between" style={{ borderColor: 'rgba(var(--gold-rgb), 0.2)' }}>
-                  <div>
-                      {/* Close button indicator bar */}
-                      <div className="w-12 h-1 bg-neutral-800 rounded-full mx-auto mb-4 cursor-pointer" onClick={() => setSelectedItem(null)}></div>
-                      
-                      <div className="flex justify-between items-start gap-4">
-                          <h2 className="font-serif-lux text-2xl font-semibold text-white">{selectedItem.name}</h2>
-                          <span className="text-lg font-serif-lux font-semibold whitespace-nowrap" style={{ color: 'var(--gold)' }}>
-                            {Number(selectedItem.price || 0).toFixed(2)} {establishment.currency_symbol || '$'}
-                          </span>
-                      </div>
-                      
-                      <span className="text-[10px] uppercase tracking-widest font-semibold block mt-2" style={{ color: 'var(--gold)' }}>Culinary Insights</span>
-                      
-                      {selectedItem.description && (
-                        <p className="text-xs text-neutral-300 mt-4 leading-relaxed">
-                            {selectedItem.description}
-                        </p>
-                      )}
-                      
-                      {selectedItem.imageUrl && (
-                        <div className="mt-4 rounded-xl overflow-hidden h-40 border border-neutral-800/80 bg-neutral-900">
-                          <img src={selectedItem.imageUrl} className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      
-                      <div className="mt-6 space-y-3">
-                          <h4 className="text-[10px] uppercase tracking-wider text-neutral-400 font-bold">Chef's Complementary Recommendation</h4>
-                          <div className="flex items-center space-x-3 bg-neutral-900 p-2.5 rounded-xl border border-neutral-800">
-                              <div className="w-12 h-12 rounded-lg bg-neutral-800 overflow-hidden shrink-0 flex items-center justify-center">
-                                  <Utensils className="w-6 h-6 text-neutral-600" />
-                              </div>
-                              <div>
-                                  <span className="text-[9px] font-bold block" style={{ color: 'var(--gold)' }}>HOUSE CULINARY SPECIALTY</span>
-                                  <span className="text-xs text-white font-semibold block">Crafted premium ingredients & garnishes</span>
-                              </div>
-                          </div>
-                      </div>
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col justify-end transition-all duration-300">
+            {/* Bottom Sheet Box */}
+            <div 
+              className="bg-neutral-950 border-t rounded-t-[30px] overflow-hidden transform translate-y-0 transition-transform duration-300 flex flex-col justify-between max-h-[85%] relative" 
+              style={{ borderColor: 'rgba(var(--gold-rgb), 0.2)' }}
+            >
+              {/* Close button (X) at top right */}
+              <button 
+                onClick={() => setSelectedItem(null)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center transition-colors hover:bg-black/80 z-50 cursor-pointer border border-white/10"
+              >
+                ✕
+              </button>
+
+              {/* Large item photo at top (240px height) */}
+              <div style={{ height: 240, width: '100%', position: 'relative', background: 'rgba(255,255,255,0.03)' }}>
+                {selectedItem.image_url ? (
+                  <img
+                    src={selectedItem.image_url}
+                    alt={selectedItem.name}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 64,
+                    background: 'rgba(218,192,99,0.1)',
+                  }}>
+                    🍽️
                   </div>
-                  
-                  <div className="mt-8 flex space-x-3">
-                      <button onClick={() => setSelectedItem(null)} className="flex-1 py-3 bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white rounded-xl text-xs font-semibold cursor-pointer">
-                          Back to Menu
-                      </button>
-                      <button onClick={() => {
-                        const itemName = selectedItem.name;
-                        setSelectedItem(null);
-                        showToast("Choice Requested", `A request/interest in "${itemName}" has been sent to your server.`);
-                      }} className="flex-1 py-3 text-neutral-950 font-bold rounded-xl text-xs shadow-lg cursor-pointer border-0" style={{ backgroundImage: `linear-gradient(to right, var(--gold), #cca73b)` }}>
-                          Ask Waiter for This
-                      </button>
-                  </div>
+                )}
+                {/* Vignette Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-transparent to-transparent"></div>
               </div>
+
+              {/* Detail Content */}
+              <div className="p-6 overflow-y-auto flex-1 custom-scroll">
+                <div className="flex justify-between items-start gap-4">
+                  <h2 className="font-serif-lux text-2xl font-semibold text-white tracking-wide">{selectedItem.name}</h2>
+                  <span className="text-lg font-serif-lux font-semibold whitespace-nowrap" style={{ color: 'var(--gold)' }}>
+                    {Number(selectedItem.price || 0).toFixed(2)} {establishment.currency_symbol || '$'}
+                  </span>
+                </div>
+
+                {/* Weight info */}
+                {selectedItem.weight && (
+                  <span className="text-xs text-neutral-400 font-mono mt-1 block">
+                    Weight: {selectedItem.weight}
+                  </span>
+                )}
+
+                {/* Tags (spicy, vegan, popular, halal) */}
+                {selectedItem.tags && selectedItem.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {selectedItem.tags.map((tag: string, index: number) => (
+                      <span 
+                        key={index}
+                        className="text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md"
+                        style={{
+                          backgroundColor: 'rgba(var(--gold-rgb), 0.1)',
+                          color: 'var(--gold)',
+                          border: '1px solid rgba(var(--gold-rgb), 0.25)',
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {selectedItem.description && (
+                  <div className="mt-6">
+                    <span className="text-[10px] uppercase tracking-widest font-semibold block mb-2" style={{ color: 'var(--gold)' }}>
+                      Description
+                    </span>
+                    <p className="text-sm text-neutral-300 leading-relaxed font-sans-lux">
+                      {selectedItem.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom Actions Area */}
+              <div className="p-6 border-t border-neutral-900 bg-neutral-950/80 backdrop-blur-md flex gap-3">
+                <button 
+                  onClick={() => setSelectedItem(null)} 
+                  className="flex-1 py-3 bg-neutral-900 border border-neutral-800 text-neutral-300 hover:text-white rounded-xl text-xs font-semibold cursor-pointer transition"
+                >
+                  Back to Menu
+                </button>
+                <button 
+                  onClick={() => {
+                    const itemName = selectedItem.name;
+                    setSelectedItem(null);
+                    showToast("Added to Favourites", `"${itemName}" has been added to your favourites!`);
+                  }}
+                  className="flex-1 py-3 text-neutral-950 font-bold rounded-xl text-xs shadow-lg cursor-pointer border-0 transition"
+                  style={{ backgroundImage: `linear-gradient(to right, var(--gold), #cca73b)` }}
+                >
+                  Add to Favourites
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
