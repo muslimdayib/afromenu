@@ -207,32 +207,53 @@ export default function AddCategoryModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-[#1b3151]/30 backdrop-blur-md" onClick={onClose}></div>
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.85)',
+      backdropFilter: 'blur(12px)',
+      zIndex: 10000,
+      display: 'flex',
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+    }}>
+      {/* Backdrop click handler */}
+      <div className="absolute inset-0" onClick={onClose}></div>
 
       {/* Modal Container */}
-      <div className="bg-white rounded-[32px] max-w-lg w-full p-6 border border-orange-50/50 relative z-10 shadow-2xl animate-slide-up overflow-y-auto max-h-[90vh]">
+      <div style={{
+        background: '#13131a',
+        border: '1px solid rgba(218,192,99,0.15)',
+        borderRadius: '24px 24px 0 0',
+        width: '100%',
+        maxWidth: 430,
+        maxHeight: '90vh',
+        overflowY: 'auto',
+        padding: 24,
+        position: 'relative',
+        color: 'white',
+      }} className="relative z-10 shadow-2xl animate-slide-up">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-5 top-5 w-8 h-8 rounded-full bg-slate-50 hover:bg-[#f2bd11]/10 flex items-center justify-center text-gray-400 hover:text-[#f2bd11] transition-all"
+          style={{ background: 'rgba(255,255,255,0.08)' }}
+          className="absolute right-5 top-5 w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all"
         >
           <X className="w-4 h-4" />
         </button>
 
         {/* Title */}
         <div className="mb-6 flex flex-col gap-0.5">
-          <h3 className="font-heading font-black text-xl text-[#2d2d2d] tracking-tight">
+          <h3 className="font-heading font-black text-xl text-white tracking-tight">
             {categoryToEdit ? "Edit Category" : "Add Category"}
           </h3>
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+          <p style={{ color: 'rgba(255,255,255,0.4)' }} className="text-[10px] font-bold uppercase tracking-wider">
             {categoryToEdit ? "Modify category layout and details" : "Create custom category menu display group"}
           </p>
         </div>
 
         {error && (
-          <div className="p-4 mb-6 rounded-2xl bg-red-50 text-red-600 text-xs font-bold border border-red-100 flex items-start gap-2 animate-shake">
+          <div className="p-4 mb-6 rounded-2xl text-red-400 text-xs font-bold flex items-start gap-2 animate-shake" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}>
             <div className="flex-1">{error}</div>
           </div>
         )}
@@ -240,8 +261,16 @@ export default function AddCategoryModal({
         <form onSubmit={handleUploadAndSave} className="flex flex-col gap-5">
           {/* FIELD 1: Category Name */}
           <div>
-            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">
-              Category Name <span className="text-[#f2bd11] font-black">*</span>
+            <label style={{
+              color: 'rgba(255,255,255,0.45)',
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              marginBottom: 6,
+              display: 'block',
+            }}>
+              Category Name <span className="text-[#dac063] font-black">*</span>
             </label>
             <input
               type="text"
@@ -249,13 +278,31 @@ export default function AddCategoryModal({
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Burgers, Salads, Drinks"
               required
-              className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:ring-2 focus:ring-[#f2bd11]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 font-bold transition-all placeholder:text-gray-300"
+              style={{
+                width: '100%',
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 12,
+                padding: '14px 16px',
+                color: 'white',
+                fontSize: 15,
+                outline: 'none',
+              }}
+              className="text-xs font-bold transition-all placeholder:text-white/25 focus:border-[#dac063]"
             />
           </div>
 
           {/* FIELD 2: Section Choice Pills */}
           <div className="flex flex-col gap-2">
-            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider">
+            <label style={{
+              color: 'rgba(255,255,255,0.45)',
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              marginBottom: 6,
+              display: 'block',
+            }}>
               Add to Section
             </label>
             
@@ -271,11 +318,8 @@ export default function AddCategoryModal({
                       setSectionName(sec);
                       setIsNewSection(false);
                     }}
-                    className={`px-3 py-2 text-[10px] font-black rounded-full border transition-all select-none uppercase tracking-wide cursor-pointer ${
-                      isSelected
-                        ? "bg-[#f2bd11] border-[#f2bd11] text-white shadow-sm"
-                        : "bg-white border-gray-100 text-gray-400 hover:text-gray-600 hover:border-gray-200"
-                    }`}
+                    style={isSelected ? { background: '#dac063', borderColor: '#dac063', color: '#0a0a0b' } : { background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}
+                    className="px-3 py-2 text-[10px] font-black rounded-full border transition-all select-none uppercase tracking-wide cursor-pointer"
                   >
                     {sec}
                   </button>
@@ -286,11 +330,8 @@ export default function AddCategoryModal({
               <button
                 type="button"
                 onClick={() => setIsNewSection(true)}
-                className={`px-3 py-2 text-[10px] font-black rounded-full border transition-all flex items-center gap-1 cursor-pointer ${
-                  isNewSection
-                    ? "bg-[#f2bd11] border-[#f2bd11] text-white shadow-sm"
-                    : "bg-slate-50 border-gray-100 text-[#f2bd11] hover:bg-amber-50 hover:border-[#f2bd11]/30"
-                }`}
+                style={isNewSection ? { background: '#dac063', borderColor: '#dac063', color: '#0a0a0b' } : { background: 'rgba(218,192,99,0.1)', borderColor: 'rgba(218,192,99,0.3)', color: '#dac063' }}
+                className="px-3 py-2 text-[10px] font-black rounded-full border transition-all flex items-center gap-1 cursor-pointer"
               >
                 <Plus className="w-3 h-3" />
                 <span>New Section</span>
@@ -306,7 +347,17 @@ export default function AddCategoryModal({
                   onChange={(e) => setNewSectionInput(e.target.value)}
                   placeholder="Type new section name (e.g. Desserts)"
                   required
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/10 font-semibold"
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 12,
+                    padding: '14px 16px',
+                    color: 'white',
+                    fontSize: 15,
+                    outline: 'none',
+                  }}
+                  className="text-xs font-semibold placeholder:text-white/25 focus:border-[#dac063]"
                 />
               </div>
             )}
@@ -314,26 +365,34 @@ export default function AddCategoryModal({
 
           {/* FIELD 3: Image cover upload */}
           <div>
-            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">
+            <label style={{
+              color: 'rgba(255,255,255,0.45)',
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              marginBottom: 6,
+              display: 'block',
+            }}>
               Category Cover Image
             </label>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Uploader Box */}
-              <div className="relative border-2 border-dashed border-gray-100 hover:border-[#f2bd11]/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all h-[120px] bg-[#f2bd11]/5/10 hover:bg-[#f2bd11]/5/30 group">
+              <div className="relative rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all h-[120px] group" style={{ border: '2px dashed rgba(218,192,99,0.3)', background: 'rgba(218,192,99,0.05)' }}>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
                   className="absolute inset-0 opacity-0 cursor-pointer z-10"
                 />
-                <Upload className="w-6 h-6 text-[#f2bd11] mb-2 group-hover:scale-105 transition-transform" />
-                <span className="text-[11px] font-black text-[#2d2d2d]">Upload category photo</span>
-                <span className="text-[8px] text-gray-400 mt-1 uppercase font-bold">PNG, JPG up to 5MB</span>
+                <Upload className="w-6 h-6 text-[#dac063] mb-2 group-hover:scale-105 transition-transform" />
+                <span className="text-[11px] font-black text-white">Upload category photo</span>
+                <span style={{ color: 'rgba(255,255,255,0.35)' }} className="text-[8px] mt-1 uppercase font-bold">PNG, JPG up to 5MB</span>
               </div>
 
               {/* Preview Box */}
-              <div className="border border-gray-100 rounded-2xl h-[120px] overflow-hidden bg-slate-50/50 flex items-center justify-center relative shadow-inner">
+              <div style={{ border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.03)' }} className="rounded-2xl h-[120px] overflow-hidden flex items-center justify-center relative">
                 {previewUrl ? (
                   <>
                     <img src={previewUrl} alt="Cover Preview" className="w-full h-full object-cover" />
@@ -350,9 +409,9 @@ export default function AddCategoryModal({
                     </button>
                   </>
                 ) : (
-                  <div className="text-center text-gray-400 text-xs flex flex-col items-center select-none font-bold">
-                    <ImageIcon className="w-7 h-7 mb-1 text-gray-300" />
-                    <span className="text-[9px] uppercase tracking-wider text-gray-300">No cover image</span>
+                  <div className="text-center text-xs flex flex-col items-center select-none font-bold" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                    <ImageIcon className="w-7 h-7 mb-1" style={{ color: 'rgba(255,255,255,0.15)' }} />
+                    <span className="text-[9px] uppercase tracking-wider">No cover image</span>
                   </div>
                 )}
               </div>
@@ -360,7 +419,7 @@ export default function AddCategoryModal({
 
             {/* Presets library */}
             <div className="mt-3">
-              <span className="block text-[8px] font-black text-gray-400 uppercase tracking-wider mb-2">
+              <span className="block text-[8px] font-black uppercase tracking-wider mb-2" style={{ color: 'rgba(255,255,255,0.35)' }}>
                 Or select an appetizing preset
               </span>
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
@@ -369,7 +428,7 @@ export default function AddCategoryModal({
                     key={idx}
                     type="button"
                     onClick={() => selectPreset(p)}
-                    className="w-12 h-10 rounded-xl overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f2bd11] focus:outline-none transition-all shadow-sm active:scale-95"
+                    className="w-12 h-10 rounded-xl overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#dac063] focus:outline-none transition-all shadow-sm active:scale-95"
                   >
                     <img src={p} alt="Preset cover" className="w-full h-full object-cover" />
                   </button>
@@ -379,59 +438,100 @@ export default function AddCategoryModal({
           </div>
 
           {/* FIELD 4: Time availability */}
-          <div className="flex flex-col gap-2 border-t border-gray-50 pt-4">
-            <div className="flex items-center gap-1.5 text-gray-500">
-              <Clock className="w-4 h-4 text-[#f2bd11]" />
-              <span className="text-[10px] font-black uppercase tracking-wider">Available hours (optional)</span>
+          <div className="flex flex-col gap-2 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-[#dac063]" />
+              <span style={{ color: 'rgba(255,255,255,0.5)' }} className="text-[10px] font-black uppercase tracking-wider">Available hours (optional)</span>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[8px] font-black text-gray-400 uppercase tracking-wider mb-1.5">
+                <label style={{ color: 'rgba(255,255,255,0.35)' }} className="block text-[8px] font-black uppercase tracking-wider mb-1.5">
                   Available From
                 </label>
                 <input
                   type="time"
                   value={timeFrom}
                   onChange={(e) => setTimeFrom(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/10 font-bold"
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 12,
+                    padding: '14px 16px',
+                    color: 'white',
+                    fontSize: 15,
+                    outline: 'none',
+                  }}
+                  className="text-xs font-bold focus:outline-none focus:border-[#dac063]"
                 />
               </div>
               <div>
-                <label className="block text-[8px] font-black text-gray-400 uppercase tracking-wider mb-1.5">
+                <label style={{ color: 'rgba(255,255,255,0.35)' }} className="block text-[8px] font-black uppercase tracking-wider mb-1.5">
                   Available To
                 </label>
                 <input
                   type="time"
                   value={timeTo}
                   onChange={(e) => setTimeTo(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/10 font-bold"
+                  style={{
+                    width: '100%',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 12,
+                    padding: '14px 16px',
+                    color: 'white',
+                    fontSize: 15,
+                    outline: 'none',
+                  }}
+                  className="text-xs font-bold focus:outline-none focus:border-[#dac063]"
                 />
               </div>
             </div>
-            <span className="text-[8px] text-gray-400 leading-normal uppercase block font-bold">
+            <span style={{ color: 'rgba(255,255,255,0.25)' }} className="text-[8px] leading-normal uppercase block font-bold">
               Automatically appends timing guidelines inside headers (e.g. BURGERS 9 AM - 10 PM)
             </span>
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center gap-3 mt-4 border-t border-gray-50 pt-4">
+          <div className="flex items-center gap-3 mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 bg-white hover:bg-slate-100 border border-gray-150 text-gray-400 hover:text-gray-650 font-black rounded-full text-xs uppercase tracking-wider transition-colors"
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 14,
+                color: 'rgba(255,255,255,0.7)',
+                fontSize: 15,
+                cursor: 'pointer',
+              }}
+              className="font-black uppercase tracking-wider"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 bg-[#f2bd11] hover:bg-[#d4a50e] disabled:bg-gray-300 text-white font-black rounded-full text-xs uppercase tracking-wider transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer border-0"
+              style={{
+                width: '100%',
+                padding: '15px',
+                background: '#dac063',
+                border: 'none',
+                borderRadius: 14,
+                color: '#0a0a0b',
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+              className="font-black uppercase tracking-wider disabled:opacity-40"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                  <span>Saving category...</span>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: '#0a0a0b' }} />
+                  <span>Saving...</span>
                 </>
               ) : (
                 <span>{categoryToEdit ? "Save Changes" : "Create Category"}</span>

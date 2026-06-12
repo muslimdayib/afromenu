@@ -3,13 +3,41 @@ import Image from "next/image";
 import Link from "next/link";
 import { Wifi, Phone, MapPin, Star, Utensils, ChevronRight } from "lucide-react";
 
+import AddCategoryModal from "../AddCategoryModal";
+import AddItemModal from "../AddItemModal";
+import EditEstablishmentModal from "../EditEstablishmentModal";
+import AccountSettingsModal from "../AccountSettingsModal";
+
 interface LuxuryDarkMenuProps {
   establishment: any;
   categories: any[];
   items: any[];
+  isEditing?: boolean;
+  onUpdate?: (data: any) => void;
 }
 
-export default function LuxuryDarkMenu({ establishment, categories, items }: LuxuryDarkMenuProps) {
+const formatTime = (timeStr: string | null | undefined): string => {
+  if (!timeStr) return "";
+  try {
+    const parts = timeStr.split(":");
+    const hours = parseInt(parts[0], 10);
+    const minutes = parts[1] ? parseInt(parts[1], 10) : 0;
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const displayHours = hours % 12 || 12;
+    const minutesDisplay = minutes > 0 ? `:${parts[1]}` : "";
+    return `${displayHours}${minutesDisplay} ${ampm}`;
+  } catch (e) {
+    return timeStr;
+  }
+};
+
+export default function LuxuryDarkMenu({
+  establishment,
+  categories,
+  items,
+  isEditing = false,
+  onUpdate,
+}: LuxuryDarkMenuProps) {
   // Premium Guest View states
   const [guestTab, setGuestTab] = useState<"menu" | "about" | "feedback">("menu");
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -20,6 +48,18 @@ export default function LuxuryDarkMenu({ establishment, categories, items }: Lux
   const [currentRating, setCurrentRating] = useState(5);
   const [feedbackText, setFeedbackText] = useState("");
   const [guestLogoError, setGuestLogoError] = useState(false);
+
+  // Editing States
+  const [isCatModalOpen, setIsCatModalOpen] = useState(false);
+  const [categoryToEdit, setCategoryToEdit] = useState<any>(null);
+  const [insertCategoryIndex, setInsertCategoryIndex] = useState<number | null>(null);
+
+  const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<any>(null);
+  const [targetCategoryIdForItem, setTargetCategoryIdForItem] = useState<string>("");
+
+  const [isEstModalOpen, setIsEstModalOpen] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
 
   const showToast = (title: string, desc: string) => {
     setToast({ title, desc });
@@ -51,23 +91,89 @@ export default function LuxuryDarkMenu({ establishment, categories, items }: Lux
     "--gold-rgb": hexToRgb(goldColor),
   } as React.CSSProperties;
 
-  // Filter items in the menu
-  const displayedItems = items.filter(item => {
-    // Visibility / Availability safety check
-    const isAvailable = item.isAvailable !== false && item.is_available !== false;
-    const isVisible = item.isVisible !== false && item.is_visible !== false;
-    
-    // Category filter
-    const categoryMatch = activeCategory === 'all' || 
-      item.category_id === activeCategory;
-    
-    // Search filter
-    const searchMatch = !guestSearchQuery || 
-      item.name.toLowerCase().includes(guestSearchQuery.toLowerCase()) ||
-      item.description?.toLowerCase().includes(guestSearchQuery.toLowerCase());
-    
-    return isAvailable && isVisible && categoryMatch && searchMatch;
-  });
+  // Refresh menu helper on owner mutation
+  const fetchMenuData = async () => {
+    try {
+      const res = await fetch(`/api/establishments/by-slug/${establishment.slug}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (onUpdate) {
+          onUpdate({
+            establishment: data.establishment,
+            categories: data.categories || [],
+            items: data.items || [],
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch menu data:", err);
+    }
+  };
+
+  // Reorder Handler
+  const handleSwapOrder = async (index: number, direction: "up" | "down") => {
+    const swapWithIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapWithIndex < 0 || swapWithIndex >= categories.length) return;
+
+    const catA = categories[index];
+    const catB = categories[swapWithIndex];
+
+    try {
+      const tempOrder = catA.sort_order;
+      catA.sort_order = catB.sort_order;
+      catB.sort_order = tempOrder;
+
+      await Promise.all([
+        fetch("/api/categories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: catA.id, sortOrder: catA.sort_order }),
+        }),
+        fetch("/api/categories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: catB.id, sortOrder: catB.sort_order }),
+        }),
+      ]);
+
+      await fetchMenuData();
+    } catch (err) {
+      console.error("Failed to reorder categories:", err);
+    }
+  };
+
+  // Delete Category
+  const handleDeleteCategory = async (catId: string) => {
+    if (!confirm("Are you sure you want to delete this category and all its menu items?")) return;
+    try {
+      const res = await fetch(`/api/categories?id=${catId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Delete request failed");
+      await fetchMenuData();
+    } catch (err) {
+      console.error("Delete category failed:", err);
+    }
+  };
+
+  // Delete Item
+  const handleDeleteItem = async (itemId: string) => {
+    if (!confirm("Are you sure you want to delete this dish?")) return;
+    try {
+      const res = await fetch(`/api/items?id=${itemId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Delete request failed");
+      await fetchMenuData();
+    } catch (err) {
+      console.error("Delete item failed:", err);
+    }
+  };
+
+  // Filter categories and items to display
+  const displayedCategories = categories.filter(
+    (cat) => activeCategory === "all" || cat.id === activeCategory
+  );
 
   return (
     <div
@@ -122,6 +228,69 @@ export default function LuxuryDarkMenu({ establishment, categories, items }: Lux
       <div className="ambient-glow top-10 left-10"></div>
       <div className="ambient-glow bottom-20 right-10"></div>
 
+      {/* TOP EDIT BAR */}
+      {isEditing && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          maxWidth: 430,
+          width: '100%',
+          zIndex: 9999,
+          background: 'rgba(0,0,0,0.9)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(218,192,99,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 16px',
+          gap: 8,
+        }}>
+          <button
+            onClick={() => window.location.href = '/dashboard'}
+            style={{
+              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 20,
+              padding: '6px 14px',
+              color: 'white',
+              fontSize: 12,
+              cursor: 'pointer',
+            }}
+          >
+            ← Dashboard
+          </button>
+          <span style={{
+            background: 'rgba(218,192,99,0.15)',
+            border: '1px solid rgba(218,192,99,0.4)',
+            borderRadius: 20,
+            padding: '4px 12px',
+            color: '#dac063',
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+          }}>
+            EDITING
+          </span>
+          <button
+            onClick={() => setIsEstModalOpen(true)}
+            style={{
+              background: '#dac063',
+              border: 'none',
+              borderRadius: 20,
+              padding: '6px 14px',
+              color: '#0a0a0b',
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            ⚙ Settings
+          </button>
+        </div>
+      )}
+
       {/* MAIN DEVICE FRAME */}
       <div className="w-full max-w-[430px] h-full md:h-[880px] md:rounded-[40px] md:shadow-[0_0_60px_rgba(0,0,0,0.9)] md:border-8 md:border-neutral-800 bg-neutral-950 overflow-hidden flex flex-col relative">
         
@@ -137,7 +306,11 @@ export default function LuxuryDarkMenu({ establishment, categories, items }: Lux
         </div>
 
         {/* MAIN SCROLLABLE CONTAINER */}
-        <div id="scroll-container" className="flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col custom-scroll pb-24 scrollbar-none">
+        <div
+          id="scroll-container"
+          style={isEditing ? { paddingTop: 56 } : undefined}
+          className="flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col custom-scroll pb-24 scrollbar-none"
+        >
             
             {/* HERO COVER COVER */}
             <div style={{
@@ -266,12 +439,12 @@ export default function LuxuryDarkMenu({ establishment, categories, items }: Lux
                     {establishment.instagram_url ? (
                       <a href={establishment.instagram_url.startsWith("http") ? establishment.instagram_url : `https://instagram.com/${establishment.instagram_url}`} target="_blank" rel="noopener noreferrer" className="glass-panel flex flex-col items-center justify-center p-3 rounded-xl hover:bg-gold-500/10 transition duration-300 active:scale-95">
                           <svg className="w-5 h-5" style={{ color: 'var(--gold)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"></path></svg>
-                          <span className="text-[9px] text-neutral-400 mt-1.5 font-bold">Social</span>
+                           <span className="text-[9px] text-neutral-400 mt-1.5 font-bold">Social</span>
                       </a>
                     ) : (
                       <div className="glass-panel flex flex-col items-center justify-center p-3 rounded-xl opacity-40">
                           <svg className="w-5 h-5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"></path></svg>
-                          <span className="text-[9px] text-neutral-500 mt-1.5 font-bold">Social</span>
+                           <span className="text-[9px] text-neutral-505 mt-1.5 font-bold">Social</span>
                       </div>
                     )}
                     {/* Share */}
@@ -386,95 +559,353 @@ export default function LuxuryDarkMenu({ establishment, categories, items }: Lux
                         </div>
                       )}
 
-                      {/* MENU ITEMS GRID */}
-                      <div className="space-y-4">
-                          {displayedItems.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: 40 }} className="glass-panel rounded-2xl">
-                              <div style={{ fontSize: 40, marginBottom: 12 }}>🍽️</div>
-                              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>
-                                No items in this category yet
-                              </p>
-                            </div>
-                          ) : (
-                            displayedItems.map((item) => (
-                              <div
-                                key={item.id}
-                                onClick={() => setSelectedItem(item)}
-                                className="glass-panel rounded-2xl overflow-hidden transition duration-300 hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 12,
-                                  padding: '16px',
-                                  borderBottom: '1px solid rgba(255,255,255,0.06)',
-                                }}
-                              >
-                                {/* Item details on the LEFT side */}
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ 
-                                    fontSize: 16, 
-                                    fontWeight: 700, 
-                                    color: 'white',
-                                    marginBottom: 4,
-                                  }}>
-                                    {item.name}
-                                  </div>
-                                  <div style={{ 
-                                    fontSize: 12, 
-                                    color: 'rgba(255,255,255,0.5)',
-                                    marginBottom: 8,
-                                    lineHeight: 1.5,
-                                  }}>
-                                    {item.description}
-                                  </div>
-                                  <div style={{ 
-                                    color: goldColor, 
-                                    fontWeight: 700, 
-                                    fontSize: 15 
-                                  }}>
-                                    {Number(item.price || 0).toFixed(2)} {establishment.currency_symbol || '$'}
-                                  </div>
-                                </div>
-                                
-                                {/* Item photo on the RIGHT side */}
-                                <div style={{
-                                  width: 80,
-                                  height: 80,
-                                  borderRadius: 12,
-                                  overflow: 'hidden',
-                                  flexShrink: 0,
-                                  background: 'rgba(255,255,255,0.05)',
-                                }}>
-                                  {item.image_url ? (
-                                    <img
-                                      src={item.image_url}
-                                      alt={item.name}
-                                      style={{
-                                        width: '100%',
-                                        height: '100%',
-                                        objectFit: 'cover',
-                                      }}
-                                      onError={(e) => {
-                                        e.currentTarget.style.display = 'none'
-                                      }}
-                                    />
-                                  ) : (
-                                    <div style={{
-                                      width: '100%',
-                                      height: '100%',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      fontSize: 28,
-                                      background: 'rgba(218,192,99,0.1)',
-                                    }}>
-                                      🍽️
+                      {/* CATEGORIES / SECTIONS LOOP */}
+                      <div className="space-y-6">
+                        {displayedCategories.length === 0 ? (
+                          <div style={{ textAlign: 'center', padding: 40 }} className="glass-panel rounded-2xl">
+                            <div style={{ fontSize: 40, marginBottom: 12 }}>🍽️</div>
+                            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>
+                              No categories found
+                            </p>
+                          </div>
+                        ) : (
+                          displayedCategories.map((cat, catIdx) => {
+                            // Filter items belonging to this category
+                            const catItems = items.filter((item) => {
+                              if (!isEditing) {
+                                const isAvailable = item.isAvailable !== false && item.is_available !== false;
+                                const isVisible = item.isVisible !== false && item.is_visible !== false;
+                                if (!isAvailable || !isVisible) return false;
+                              }
+                              const searchMatch = !guestSearchQuery || 
+                                item.name.toLowerCase().includes(guestSearchQuery.toLowerCase()) ||
+                                item.description?.toLowerCase().includes(guestSearchQuery.toLowerCase());
+                              
+                              return item.category_id === cat.id && searchMatch;
+                            });
+
+                            return (
+                              <div key={cat.id} className="flex flex-col gap-3">
+                                {/* CATEGORY CARD / HEADER */}
+                                <div 
+                                  style={{
+                                    position: 'relative',
+                                    borderRadius: 16,
+                                    overflow: 'hidden',
+                                    border: '1px solid rgba(218,192,99,0.15)',
+                                    background: 'rgba(18,18,19,0.6)',
+                                    padding: '16px 20px',
+                                    backgroundImage: cat.image_url ? `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(${cat.image_url})` : 'none',
+                                    backgroundSize: 'cover',
+                                    backgroundPosition: 'center',
+                                    minHeight: 80,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  <h3 className="font-serif-lux text-xl font-semibold text-white tracking-wide">
+                                    {cat.name}
+                                  </h3>
+                                  {cat.time_from && cat.time_to && (
+                                    <p className="text-[10px] text-neutral-400 font-mono mt-1">
+                                      Available: {formatTime(cat.time_from)} - {formatTime(cat.time_to)}
+                                    </p>
+                                  )}
+
+                                  {isEditing && (
+                                    <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 6, zIndex: 10 }}>
+                                      {/* Order buttons */}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSwapOrder(catIdx, "up");
+                                        }}
+                                        disabled={catIdx === 0}
+                                        style={{
+                                          background: 'rgba(255,255,255,0.1)',
+                                          border: '1px solid rgba(255,255,255,0.2)',
+                                          borderRadius: '50%',
+                                          width: 28,
+                                          height: 28,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          color: 'white',
+                                          cursor: 'pointer',
+                                          opacity: catIdx === 0 ? 0.3 : 1,
+                                        }}
+                                        title="Move Up"
+                                      >
+                                        ▲
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSwapOrder(catIdx, "down");
+                                        }}
+                                        disabled={catIdx === categories.length - 1}
+                                        style={{
+                                          background: 'rgba(255,255,255,0.1)',
+                                          border: '1px solid rgba(255,255,255,0.2)',
+                                          borderRadius: '50%',
+                                          width: 28,
+                                          height: 28,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          color: 'white',
+                                          cursor: 'pointer',
+                                          opacity: catIdx === categories.length - 1 ? 0.3 : 1,
+                                        }}
+                                        title="Move Down"
+                                      >
+                                        ▼
+                                      </button>
+                                      <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)', alignSelf: 'center' }}></div>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setCategoryToEdit(cat);
+                                          setInsertCategoryIndex(null);
+                                          setIsCatModalOpen(true);
+                                        }}
+                                        style={{
+                                          background: 'rgba(218,192,99,0.15)',
+                                          border: '1px solid rgba(218,192,99,0.3)',
+                                          borderRadius: '50%',
+                                          width: 28,
+                                          height: 28,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          color: '#dac063',
+                                          cursor: 'pointer',
+                                        }}
+                                        title="Edit Category"
+                                      >
+                                        ✏️
+                                      </button>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteCategory(cat.id);
+                                        }}
+                                        style={{
+                                          background: 'rgba(239,68,68,0.15)',
+                                          border: '1px solid rgba(239,68,68,0.3)',
+                                          borderRadius: '50%',
+                                          width: 28,
+                                          height: 28,
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          color: '#ef4444',
+                                          cursor: 'pointer',
+                                        }}
+                                        title="Delete Category"
+                                      >
+                                        🗑️
+                                      </button>
                                     </div>
                                   )}
                                 </div>
+
+                                {/* ITEMS LIST UNDER CATEGORY */}
+                                <div className="space-y-4">
+                                  {catItems.length === 0 ? (
+                                    <div className="text-center py-6 text-xs text-neutral-500 italic rounded-2xl border border-dashed border-neutral-800">
+                                      No items inside this category yet.
+                                    </div>
+                                  ) : (
+                                    catItems.map((item) => (
+                                      <div
+                                        key={item.id}
+                                        onClick={() => setSelectedItem(item)}
+                                        className={`glass-panel rounded-2xl overflow-hidden transition duration-300 hover:scale-[1.01] active:scale-[0.99] cursor-pointer ${
+                                          isEditing && (!item.is_available || !item.is_visible) ? "opacity-50" : ""
+                                        }`}
+                                        style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: 12,
+                                          padding: '16px',
+                                          borderBottom: '1px solid rgba(255,255,255,0.06)',
+                                          position: 'relative',
+                                        }}
+                                      >
+                                        {/* Item details on the LEFT side */}
+                                        <div style={{ flex: 1 }}>
+                                          <div style={{ 
+                                            fontSize: 16, 
+                                            fontWeight: 700, 
+                                            color: 'white',
+                                            marginBottom: 4,
+                                          }}>
+                                            {item.name}
+                                          </div>
+                                          <div style={{ 
+                                            fontSize: 12, 
+                                            color: 'rgba(255,255,255,0.5)',
+                                            marginBottom: 8,
+                                            lineHeight: 1.5,
+                                          }}>
+                                            {item.description}
+                                          </div>
+                                          <div style={{ 
+                                            color: goldColor, 
+                                            fontWeight: 700, 
+                                            fontSize: 15 
+                                          }}>
+                                            {Number(item.price || 0).toFixed(2)} {establishment.currency_symbol || '$'}
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Item photo on the RIGHT side */}
+                                        <div style={{
+                                          width: 80,
+                                          height: 80,
+                                          borderRadius: 12,
+                                          overflow: 'hidden',
+                                          flexShrink: 0,
+                                          background: 'rgba(255,255,255,0.05)',
+                                        }}>
+                                          {item.image_url ? (
+                                            <img
+                                              src={item.image_url}
+                                              alt={item.name}
+                                              style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'cover',
+                                              }}
+                                              onError={(e) => {
+                                                e.currentTarget.style.display = 'none'
+                                              }}
+                                            />
+                                          ) : (
+                                            <div style={{
+                                              width: '100%',
+                                              height: '100%',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              fontSize: 28,
+                                              background: 'rgba(218,192,99,0.1)',
+                                            }}>
+                                              🍽️
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Item Edit/Delete overlays */}
+                                        {isEditing && (
+                                          <div 
+                                            style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 6, zIndex: 10 }}
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            <button
+                                              onClick={() => {
+                                                setItemToEdit(item);
+                                                setTargetCategoryIdForItem(item.category_id);
+                                                setIsItemModalOpen(true);
+                                              }}
+                                              style={{
+                                                background: 'rgba(218,192,99,0.15)',
+                                                border: '1px solid rgba(218,192,99,0.3)',
+                                                borderRadius: '50%',
+                                                width: 28,
+                                                height: 28,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: '#dac063',
+                                                cursor: 'pointer',
+                                              }}
+                                              title="Edit Item"
+                                            >
+                                              ✏️
+                                            </button>
+                                            <button
+                                              onClick={() => handleDeleteItem(item.id)}
+                                              style={{
+                                                background: 'rgba(239,68,68,0.15)',
+                                                border: '1px solid rgba(239,68,68,0.3)',
+                                                borderRadius: '50%',
+                                                width: 28,
+                                                height: 28,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                color: '#ef4444',
+                                                cursor: 'pointer',
+                                              }}
+                                              title="Delete Item"
+                                            >
+                                              🗑️
+                                            </button>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+
+                                {/* ADD ITEM BUTTON */}
+                                {isEditing && (
+                                  <button
+                                    onClick={() => {
+                                      setItemToEdit(null);
+                                      setTargetCategoryIdForItem(cat.id);
+                                      setIsItemModalOpen(true);
+                                    }}
+                                    style={{
+                                      width: '100%',
+                                      padding: 14,
+                                      background: 'rgba(218,192,99,0.06)',
+                                      border: '1px dashed rgba(218,192,99,0.25)',
+                                      borderRadius: 12,
+                                      color: '#dac063',
+                                      fontSize: 13,
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: 8,
+                                    }}
+                                  >
+                                    + Add Item
+                                  </button>
+                                )}
                               </div>
-                            ))
-                          )}
+                            );
+                          })
+                        )}
+
+                        {/* ADD CATEGORY BUTTON */}
+                        {isEditing && (
+                          <button
+                            onClick={() => {
+                              setCategoryToEdit(null);
+                              setInsertCategoryIndex(null);
+                              setIsCatModalOpen(true);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: 16,
+                              background: 'rgba(218,192,99,0.06)',
+                              border: '2px dashed rgba(218,192,99,0.25)',
+                              borderRadius: 16,
+                              color: '#dac063',
+                              fontSize: 15,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              margin: '16px 0',
+                            }}
+                          >
+                            + Add Category
+                          </button>
+                        )}
                       </div>
                   </div>
                 )}
@@ -757,6 +1188,56 @@ export default function LuxuryDarkMenu({ establishment, categories, items }: Lux
         )}
 
       </div>
+
+      {/* MODALS */}
+      {isEditing && (
+        <>
+          <AddCategoryModal
+            isOpen={isCatModalOpen}
+            onClose={() => {
+              setIsCatModalOpen(false);
+              setCategoryToEdit(null);
+              setInsertCategoryIndex(null);
+            }}
+            onSuccess={fetchMenuData}
+            establishmentId={establishment.id}
+            categoryToEdit={categoryToEdit}
+            nextSortOrder={insertCategoryIndex !== null ? insertCategoryIndex : categories.length}
+            defaultSectionName={null}
+            existingSections={[]}
+          />
+
+          <AddItemModal
+            isOpen={isItemModalOpen}
+            onClose={() => {
+              setIsItemModalOpen(false);
+              setItemToEdit(null);
+            }}
+            onSuccess={fetchMenuData}
+            categoryId={targetCategoryIdForItem}
+            itemToEdit={itemToEdit}
+            nextSortOrder={items.filter((i) => i.category_id === targetCategoryIdForItem).length}
+            allItems={items}
+          />
+
+          <EditEstablishmentModal
+            isOpen={isEstModalOpen}
+            onClose={() => {
+              setIsEstModalOpen(false);
+            }}
+            onSuccess={(updatedEst) => {
+              fetchMenuData();
+            }}
+            establishment={establishment}
+          />
+
+          <AccountSettingsModal
+            isOpen={isAccountModalOpen}
+            onClose={() => setIsAccountModalOpen(false)}
+          />
+        </>
+      )}
+
     </div>
   );
 }

@@ -401,87 +401,117 @@ export default function AddItemModal({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop with elegant blur */}
-      <div className="absolute inset-0 bg-[#1b3151]/30 backdrop-blur-md transition-opacity" onClick={onClose}></div>
+  const labelStyle: React.CSSProperties = {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 11,
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    marginBottom: 6,
+    display: 'block',
+  };
 
-      {/* Slide-Up High Fidelity Modal Card Container */}
-      <div className="bg-white rounded-[32px] max-w-lg w-full border border-orange-50/50 relative z-10 shadow-2xl animate-slide-up flex flex-col max-h-[90vh] overflow-hidden">
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    padding: '14px 16px',
+    color: 'white',
+    fontSize: 15,
+    outline: 'none',
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.85)',
+      backdropFilter: 'blur(12px)',
+      zIndex: 10000,
+      display: 'flex',
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+    }}>
+      {/* Backdrop click handler */}
+      <div className="absolute inset-0" onClick={onClose}></div>
+
+      {/* Modal Container */}
+      <div style={{
+        background: '#13131a',
+        border: '1px solid rgba(218,192,99,0.15)',
+        borderRadius: '24px 24px 0 0',
+        width: '100%',
+        maxWidth: 430,
+        maxHeight: '90vh',
+        overflowY: 'auto',
+        padding: 24,
+        position: 'relative',
+        color: 'white',
+      }} className="relative z-10 shadow-2xl animate-slide-up flex flex-col">
         
         {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="pb-4 border-b border-white/10 flex items-center justify-between mb-4">
           <div className="flex flex-col gap-0.5">
-            <h3 className="font-heading font-black text-xl text-[#2d2d2d] tracking-tight">
-              {itemToEdit ? "Edit Item details" : "Create new item"}
+            <h3 className="font-heading font-black text-xl text-white tracking-tight">
+              {itemToEdit ? "Edit Item Details" : "Create New Item"}
             </h3>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+            <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider">
               {itemToEdit ? "Modify and sync menu dish properties" : "Add custom dish to your visual category"}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-50 hover:bg-[#f2bd11]/10 flex items-center justify-center text-gray-400 hover:text-[#f2bd11] transition-all"
+            style={{ background: 'rgba(255,255,255,0.08)' }}
+            className="w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Scrollable Form Body Container */}
-        <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 scrollbar-thin flex flex-col gap-6">
+        {/* Form Body */}
+        <form onSubmit={handleSave} className="flex flex-col gap-5">
           
           {error && (
-            <div className="p-4 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-xs font-bold flex items-start gap-2.5 shadow-sm animate-shake">
+            <div className="p-4 rounded-2xl text-red-400 text-xs font-bold flex items-start gap-2.5 shadow-sm animate-shake" style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}>
               <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
               <div className="flex-1">{error}</div>
             </div>
           )}
 
-          {/* ==========================================
-              SECTION 1: BASIC INFO
-              ========================================== */}
+          {/* S1: Basic Info */}
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2 border-l-4 border-[#f2bd11] pl-2.5">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">
-                Basic Info
-              </span>
-            </div>
-
-            {/* Name & Weight Row */}
+            {/* Name & Weight */}
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2">
-                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">
-                  Item Name <span className="text-[#f2bd11] font-black">*</span>
-                </label>
+                <label style={labelStyle}>Item Name *</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Avocado Toast Deluxe"
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:ring-2 focus:ring-[#f2bd11]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 font-bold transition-all placeholder:text-gray-300"
+                  style={inputStyle}
+                  className="placeholder:text-white/20 font-bold focus:border-[#dac063]"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">
-                  Weight / Vol
-                </label>
+                <label style={labelStyle}>Weight / Vol</label>
                 <input
                   type="text"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   placeholder="e.g. 250g"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:ring-2 focus:ring-[#f2bd11]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 font-bold transition-all placeholder:text-gray-300"
+                  style={inputStyle}
+                  className="placeholder:text-white/20 font-bold focus:border-[#dac063]"
                 />
               </div>
             </div>
 
-            {/* Price & Old Price Row */}
+            {/* Price & Old Price */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">
-                  Selling Price <span className="text-[#f2bd11] font-black">*</span>
-                </label>
+                <label style={labelStyle}>Selling Price *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -490,13 +520,12 @@ export default function AddItemModal({
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="0.00"
                   required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:ring-2 focus:ring-[#f2bd11]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 font-bold transition-all placeholder:text-gray-300"
+                  style={inputStyle}
+                  className="placeholder:text-white/20 font-bold focus:border-[#dac063]"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">
-                  Old Price <span className="text-gray-400 font-normal">(Discount strike)</span>
-                </label>
+                <label style={labelStyle}>Old Price</label>
                 <input
                   type="number"
                   step="0.01"
@@ -504,26 +533,28 @@ export default function AddItemModal({
                   value={oldPrice}
                   onChange={(e) => setOldPrice(e.target.value)}
                   placeholder="e.g. 14.99"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:ring-2 focus:ring-[#f2bd11]/15 focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 font-bold transition-all placeholder:text-gray-300"
+                  style={inputStyle}
+                  className="placeholder:text-white/20 font-bold focus:border-[#dac063]"
                 />
               </div>
             </div>
 
-            {/* VARIANTS BUILDER */}
-            <div className="bg-[#f2bd11]/5/30 p-4 rounded-2xl border border-orange-50 flex flex-col gap-3">
+            {/* Variants */}
+            <div className="p-4 rounded-2xl flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">
+                  <span className="text-[10px] font-black text-white/50 uppercase tracking-wider">
                     Variants / Sizes
                   </span>
-                  <span className="text-[8px] text-gray-400 font-bold">
-                    Define custom sizing models (e.g. Small, Medium, Large)
+                  <span className="text-[8px] text-white/30 font-bold uppercase">
+                    Define custom sizing models (e.g. Small, Medium)
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={handleAddVariant}
-                  className="px-2.5 py-1 text-[9px] font-black text-white bg-[#f2bd11] hover:bg-[#d4a50e] transition-all rounded-lg flex items-center gap-1 shadow-sm uppercase cursor-pointer"
+                  style={{ background: '#dac063', color: '#0a0a0b' }}
+                  className="px-2.5 py-1 text-[9px] font-black transition-all rounded-lg flex items-center gap-1 shadow-sm uppercase cursor-pointer"
                 >
                   <Plus className="w-3 h-3" />
                   <span>Add Variant</span>
@@ -531,8 +562,8 @@ export default function AddItemModal({
               </div>
 
               {variants.length === 0 ? (
-                <div className="text-center py-4 border border-dashed border-amber-100 rounded-xl text-[9px] text-gray-400 italic">
-                  No size variants added yet. Tap Add Variant to append items.
+                <div className="text-center py-4 rounded-xl text-[9px] text-white/30 italic" style={{ border: '1px dashed rgba(255,255,255,0.1)' }}>
+                  No size variants added yet.
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
@@ -542,8 +573,9 @@ export default function AddItemModal({
                         type="text"
                         value={v.name}
                         onChange={(e) => handleVariantFieldChange(index, "name", e.target.value)}
-                        placeholder="e.g. Large / Double Patty"
-                        className="flex-1 px-3 py-2 rounded-lg border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-white font-semibold"
+                        placeholder="e.g. Large"
+                        style={inputStyle}
+                        className="flex-1 py-2 text-xs focus:border-[#dac063]"
                       />
                       <input
                         type="number"
@@ -552,12 +584,13 @@ export default function AddItemModal({
                         value={v.price}
                         onChange={(e) => handleVariantFieldChange(index, "price", e.target.value)}
                         placeholder="Price"
-                        className="w-20 px-3 py-2 rounded-lg border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-white font-bold"
+                        style={inputStyle}
+                        className="w-20 py-2 text-xs focus:border-[#dac063]"
                       />
                       <button
                         type="button"
                         onClick={() => handleRemoveVariant(index)}
-                        className="p-2 rounded-lg bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors shadow-xs"
+                        className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -567,17 +600,16 @@ export default function AddItemModal({
               )}
             </div>
 
-            {/* Description Textarea */}
+            {/* Description */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider">
-                  Description
-                </label>
+                <label style={labelStyle}>Description</label>
                 <button
                   type="button"
                   onClick={handleAiGenerate}
                   disabled={aiLoading}
-                  className="text-[9px] font-black text-white bg-[#1b3151] hover:bg-[#112036] disabled:bg-gray-100 disabled:text-gray-400 px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 shadow-sm uppercase cursor-pointer"
+                  style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
+                  className="text-[9px] font-black px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 shadow-sm uppercase cursor-pointer"
                 >
                   {aiLoading ? (
                     <>
@@ -585,52 +617,42 @@ export default function AddItemModal({
                       <span>Generating...</span>
                     </>
                   ) : (
-                    <span>✨ Auto Description</span>
+                    <span>✨ AI Generate</span>
                   )}
                 </button>
               </div>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Give a quick summary of ingredients, seasoning methods, allergens, etc..."
+                placeholder="Dish description, ingredients, allergens..."
                 rows={3}
-                className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 placeholder:text-gray-300 resize-none transition-all"
+                style={inputStyle}
+                className="placeholder:text-white/20 resize-none focus:border-[#dac063]"
               />
             </div>
           </div>
 
-          {/* ==========================================
-              SECTION 2: SCROLLABLE DETAILS
-              ========================================== */}
-          <div className="flex flex-col gap-4 border-t border-gray-50 pt-5">
-            <div className="flex items-center gap-2 border-l-4 border-[#f2bd11] pl-2.5">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">
-                Details & Assets
-              </span>
-            </div>
-
-            {/* Large Dashed Image Uploader */}
+          {/* S2: Details & Assets */}
+          <div className="flex flex-col gap-4 border-t border-white/10 pt-4">
+            {/* Image */}
             <div>
-              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">
-                Item Cover Photo
-              </label>
-              
+              <label style={labelStyle}>Item Cover Photo</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Uploader Trigger */}
-                <div className="relative border-2 border-dashed border-gray-100 hover:border-[#f2bd11]/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all h-[120px] bg-[#f2bd11]/5/10 hover:bg-[#f2bd11]/5/35 group">
+                {/* Upload box */}
+                <div className="relative border-2 border-dashed border-white/10 hover:border-[#dac063]/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all h-[120px] bg-white/[0.02] hover:bg-white/[0.05] group">
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleFileChange}
                     className="absolute inset-0 opacity-0 cursor-pointer z-10"
                   />
-                  <Upload className="w-6 h-6 text-[#f2bd11] mb-2 group-hover:scale-105 transition-transform" />
-                  <span className="text-[11px] font-black text-[#2d2d2d]">Upload Custom Photo</span>
-                  <span className="text-[8px] text-gray-400 mt-1 uppercase font-bold">PNG, JPG up to 5MB</span>
+                  <Upload className="w-6 h-6 text-[#dac063] mb-2 group-hover:scale-105 transition-transform" />
+                  <span className="text-[11px] font-black text-white">Upload Custom Photo</span>
+                  <span className="text-[8px] text-white/30 mt-1 uppercase font-bold">PNG, JPG up to 5MB</span>
                 </div>
 
                 {/* Preview Box */}
-                <div className="border border-gray-100 rounded-2xl h-[120px] overflow-hidden bg-slate-50/50 flex items-center justify-center relative shadow-inner">
+                <div className="border border-white/10 rounded-2xl h-[120px] overflow-hidden bg-white/[0.01] flex items-center justify-center relative">
                   {previewUrl ? (
                     <>
                       <img src={previewUrl} alt="Cover Preview" className="w-full h-full object-cover" />
@@ -647,18 +669,18 @@ export default function AddItemModal({
                       </button>
                     </>
                   ) : (
-                    <div className="text-center text-gray-400 text-xs flex flex-col items-center select-none font-bold">
-                      <ImageIcon className="w-7 h-7 mb-1 text-gray-300" />
-                      <span className="text-[9px] uppercase tracking-wider text-gray-300">No Image loaded</span>
+                    <div className="text-center text-white/30 text-xs flex flex-col items-center select-none font-bold">
+                      <ImageIcon className="w-7 h-7 mb-1 text-white/20" />
+                      <span className="text-[9px] uppercase tracking-wider">No Image</span>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Presets Library */}
+              {/* Presets */}
               <div className="mt-3">
-                <span className="block text-[8px] font-black text-gray-400 uppercase tracking-wider mb-2">
-                  Select a gourmet preset
+                <span className="block text-[8px] font-black text-white/30 uppercase tracking-wider mb-2">
+                  Select a preset
                 </span>
                 <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin">
                   {PRESETS.map((p, idx) => (
@@ -666,7 +688,7 @@ export default function AddItemModal({
                       key={idx}
                       type="button"
                       onClick={() => selectPreset(p)}
-                      className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#f2bd11] focus:outline-none transition-all shadow-sm active:scale-95"
+                      className="w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 border-2 border-transparent hover:border-[#dac063] focus:outline-none transition-all shadow-sm active:scale-95"
                     >
                       <img src={p} alt="Preset cover" className="w-full h-full object-cover" />
                     </button>
@@ -675,11 +697,9 @@ export default function AddItemModal({
               </div>
             </div>
 
-            {/* Badges and tags checkboxes */}
+            {/* Badges/Tags */}
             <div>
-              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2">
-                Badges & Labels
-              </label>
+              <label style={labelStyle}>Badges & Labels</label>
               <div className="flex flex-wrap gap-2">
                 {TAG_OPTIONS.map((tag) => {
                   const isSelected = tags.includes(tag.value);
@@ -691,11 +711,8 @@ export default function AddItemModal({
                         e.preventDefault();
                         handleTagToggle(tag.value);
                       }}
-                      className={`px-3 py-1.5 rounded-full text-[10px] font-black transition-all border ${
-                        isSelected
-                          ? "bg-[#f2bd11] border-[#f2bd11] text-white shadow-sm"
-                          : "bg-white border-gray-100 text-gray-400 hover:text-gray-600 hover:border-gray-200"
-                      }`}
+                      style={isSelected ? { background: '#dac063', color: '#0a0a0b', borderColor: '#dac063' } : { background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)', borderColor: 'rgba(255,255,255,0.1)' }}
+                      className="px-3 py-1.5 rounded-full text-[10px] font-black border transition-all"
                     >
                       {tag.label}
                     </button>
@@ -704,68 +721,57 @@ export default function AddItemModal({
               </div>
             </div>
 
-            {/* 3D glb assets link */}
+            {/* 3D glb URL */}
             <div>
-              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1.5">
-                3D GLB Model Asset URL (.glb)
-              </label>
+              <label style={labelStyle}>3D GLB Model Asset URL (.glb)</label>
               <input
                 type="text"
                 value={model3dUrl}
                 onChange={(e) => setModel3dUrl(e.target.value)}
                 placeholder="https://yourstore.com/assets/dish.glb"
-                className="w-full px-4 py-3 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-xs text-[#2d2d2d] bg-[#f2bd11]/5/20 font-bold transition-all placeholder:text-gray-300"
+                style={inputStyle}
+                className="placeholder:text-white/20 font-bold focus:border-[#dac063]"
               />
-              <span className="text-[8px] text-gray-400 mt-1 block font-bold leading-normal uppercase">
-                Enables users to project interactive 3D structures in their web browser
-              </span>
             </div>
 
-            {/* SELECT ADD-ONS DROPDOWN COMPONENT */}
+            {/* Addons Dropdown Selector */}
             <div className="flex flex-col gap-2">
-              <label className="block text-[10px] font-black text-gray-500 uppercase tracking-wider">
-                Customization Options / Add-ons
-              </label>
-              
+              <label style={labelStyle}>Customization Options / Add-ons</label>
               <div className="relative" ref={dropdownRef}>
-                {/* Custom Search/Dropdown input button */}
                 <button
                   type="button"
                   onClick={() => setIsAddonDropdownOpen(!isAddonDropdownOpen)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-100 bg-[#f2bd11]/5/20 hover:border-gray-200 flex items-center justify-between text-xs text-slate-500 transition-all font-bold"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: 12, padding: '12px 16px' }}
+                  className="w-full hover:border-white/20 flex items-center justify-between text-xs transition-all font-bold"
                 >
                   <div className="flex items-center gap-2">
-                    <Search className="w-4 h-4 text-gray-400" />
+                    <Search className="w-4 h-4 text-white/40" />
                     <span>
                       {selectedAddons.length > 0
                         ? `Linked: ${selectedAddons.map((g) => g.name).join(", ")}`
-                        : "Select and link customizable add-ons"}
+                        : "Select customizable add-ons"}
                     </span>
                   </div>
-                  <span className="text-[10px] text-[#f2bd11] font-black uppercase">
+                  <span className="text-[10px] text-[#dac063] font-black uppercase">
                     {isAddonDropdownOpen ? "Close" : "Open"}
                   </span>
                 </button>
 
-                {/* Dropdown Menu list */}
                 {isAddonDropdownOpen && (
-                  <div className="absolute top-[102%] left-0 right-0 z-20 bg-white border border-orange-50 shadow-2xl rounded-2xl p-3 flex flex-col gap-3 animate-slide-up max-h-[220px] overflow-hidden">
-                    {/* Search bar inside */}
+                  <div className="absolute top-[102%] left-0 right-0 z-20 bg-[#13131a] border border-white/10 shadow-2xl rounded-2xl p-3 flex flex-col gap-3 animate-slide-up max-h-[220px] overflow-y-auto">
                     <div className="relative">
                       <input
                         type="text"
                         value={addonSearch}
                         onChange={(e) => setAddonSearch(e.target.value)}
                         placeholder="Search addon groups..."
-                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-100 focus:border-[#f2bd11] focus:outline-none text-[11px] text-[#2d2d2d] bg-[#f2bd11]/5/10 font-semibold"
+                        style={inputStyle}
+                        className="py-2 text-xs focus:border-[#dac063]"
                       />
-                      <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                     </div>
-
-                    {/* Groups List */}
-                    <div className="flex-1 overflow-y-auto scrollbar-thin flex flex-col gap-1 pr-1">
+                    <div className="flex flex-col gap-1 pr-1">
                       {filteredAddonGroups.length === 0 ? (
-                        <div className="py-6 text-center text-[10px] text-gray-400 italic">
+                        <div className="py-6 text-center text-[10px] text-white/30 italic">
                           No unique customization groups found.
                         </div>
                       ) : (
@@ -778,23 +784,16 @@ export default function AddItemModal({
                               key={idx}
                               type="button"
                               onClick={() => toggleAddonGroup(group)}
-                              className={`w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-colors border ${
-                                isSelected
-                                  ? "bg-[#f2bd11]/5 border-amber-100 text-[#f2bd11] font-bold"
-                                  : "bg-white border-transparent hover:bg-slate-50 text-[#2d2d2d]"
-                              }`}
+                              style={isSelected ? { background: 'rgba(218,192,99,0.1)', borderColor: 'rgba(218,192,99,0.3)', color: '#dac063' } : { background: 'transparent', borderColor: 'transparent', color: 'white' }}
+                              className="w-full text-left px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-colors border"
                             >
                               <div className="flex flex-col gap-0.5">
                                 <span>{group.name}</span>
-                                <span className="text-[8px] text-gray-400 font-bold uppercase">
-                                  {group.options?.length || 0} choices • {group.mandatory ? "Required" : "Optional"}
+                                <span className="text-[8px] text-white/40 font-bold uppercase">
+                                  {group.options?.length || 0} choices
                                 </span>
                               </div>
-                              {isSelected ? (
-                                <Check className="w-4 h-4 text-[#f2bd11]" />
-                              ) : (
-                                <span className="text-[10px] text-slate-300 font-bold">+ Link</span>
-                              )}
+                              {isSelected ? <Check className="w-4 h-4" /> : <span className="text-[10px] text-white/30">+ Link</span>}
                             </button>
                           );
                         })
@@ -804,30 +803,24 @@ export default function AddItemModal({
                 )}
               </div>
 
-              {/* Display Linked Badges */}
+              {/* Display Linked */}
               {selectedAddons.length > 0 && (
-                <div className="flex flex-col gap-2 mt-1 bg-slate-50/50 p-2.5 rounded-2xl border border-gray-100/50">
-                  <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider block">
+                <div className="flex flex-col gap-2 mt-1 p-2.5 rounded-2xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <span className="text-[8px] font-black text-white/40 uppercase block">
                     Linked Groups checklist ({selectedAddons.length})
                   </span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedAddons.map((group, idx) => (
                       <div
                         key={idx}
-                        className="px-2.5 py-1 rounded-lg bg-white border border-gray-150 text-[10px] text-gray-700 font-extrabold flex items-center gap-1.5 shadow-sm"
+                        className="px-2.5 py-1 rounded-lg text-[10px] text-white font-extrabold flex items-center gap-1.5 shadow-sm"
+                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
                       >
                         <span>{group.name}</span>
-                        <span className="text-[8px] px-1 py-0.5 rounded bg-gray-100 text-gray-500 font-bold">
-                          {group.options?.length || 0}
-                        </span>
                         <button
                           type="button"
-                          onClick={() =>
-                            setSelectedAddons(
-                              selectedAddons.filter((g) => g.name.toLowerCase().trim() !== group.name.toLowerCase().trim())
-                            )
-                          }
-                          className="text-gray-400 hover:text-red-500 ml-0.5 transition-colors font-bold text-xs"
+                          onClick={() => setSelectedAddons(selectedAddons.filter((g) => g.name.toLowerCase().trim() !== group.name.toLowerCase().trim()))}
+                          className="text-white/40 hover:text-red-500 ml-0.5"
                         >
                           ✕
                         </button>
@@ -837,14 +830,14 @@ export default function AddItemModal({
                 </div>
               )}
 
-              {/* Add addon creator shortcut link */}
+              {/* Add addon shortcut link */}
               <div className="flex items-center justify-between text-[10px] px-1">
-                <span className="text-gray-400 font-bold uppercase">Add customized options?</span>
+                <span className="text-white/30 font-bold uppercase">Add options?</span>
                 <a
                   href={`/panel/${slug}/components`}
                   target="_blank"
                   rel="noreferrer"
-                  className="font-black text-[#f2bd11] hover:text-[#d36e4b] hover:underline flex items-center gap-0.5 uppercase tracking-wide"
+                  className="font-black text-[#dac063] hover:underline flex items-center gap-0.5 uppercase tracking-wide"
                 >
                   <span>Create new add-on</span>
                   <ArrowRight className="w-3 h-3" />
@@ -852,81 +845,88 @@ export default function AddItemModal({
               </div>
             </div>
 
-            {/* Visibility & Availability Controls */}
+            {/* Visibility & Availability Switch */}
             <div className="grid grid-cols-2 gap-4 mt-2">
-              {/* Visible Switch */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#f2bd11]/5/10 border border-gray-100">
+              <div className="flex items-center justify-between p-3.5 rounded-2xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div className="flex flex-col gap-0.5 select-none">
-                  <span className="text-xs font-black text-[#2d2d2d]">Visible on Page</span>
-                  <span className="text-[8px] text-gray-400 font-bold uppercase">Toggle visibility</span>
+                  <span className="text-xs font-black text-white">Visible on Page</span>
+                  <span className="text-[8px] text-white/30 font-bold uppercase">Toggle visibility</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsVisible(!isVisible)}
                   className={`w-11 h-6 rounded-full transition-all relative outline-none focus:outline-none ${
-                    isVisible ? "bg-[#f2bd11]" : "bg-gray-200"
+                    isVisible ? "bg-[#dac063]" : "bg-neutral-800"
                   }`}
                 >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all shadow-sm ${
-                      isVisible ? "right-1" : "left-1"
-                    }`}
-                  ></div>
+                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all shadow-sm ${isVisible ? "right-1" : "left-1"}`} />
                 </button>
               </div>
 
-              {/* Available Switch */}
-              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#f2bd11]/5/10 border border-gray-100">
+              <div className="flex items-center justify-between p-3.5 rounded-2xl" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div className="flex flex-col gap-0.5 select-none">
-                  <span className="text-xs font-black text-[#2d2d2d]">In Stock / Available</span>
-                  <span className="text-[8px] text-gray-400 font-bold uppercase">Toggle ordering</span>
+                  <span className="text-xs font-black text-white">In Stock</span>
+                  <span className="text-[8px] text-white/30 font-bold uppercase">Toggle ordering</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsAvailable(!isAvailable)}
                   className={`w-11 h-6 rounded-full transition-all relative outline-none focus:outline-none ${
-                    isAvailable ? "bg-[#f2bd11]" : "bg-gray-200"
+                    isAvailable ? "bg-[#dac063]" : "bg-neutral-800"
                   }`}
                 >
-                  <div
-                    className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all shadow-sm ${
-                      isAvailable ? "right-1" : "left-1"
-                    }`}
-                  ></div>
+                  <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all shadow-sm ${isAvailable ? "right-1" : "left-1"}`} />
                 </button>
               </div>
             </div>
-
           </div>
 
+          {/* Footer Actions */}
+          <div className="pt-4 border-t border-white/10 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 14,
+                color: 'rgba(255,255,255,0.7)',
+                fontSize: 15,
+                cursor: 'pointer',
+              }}
+              className="font-black uppercase tracking-wider"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '15px',
+                background: '#dac063',
+                border: 'none',
+                borderRadius: 14,
+                color: '#0a0a0b',
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+              className="font-black uppercase tracking-wider disabled:opacity-40"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-neutral-950" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <span>{itemToEdit ? "Save Changes" : "Create Item"}</span>
+              )}
+            </button>
+          </div>
         </form>
-
-        {/* Footer actions */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-gray-100 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-3 bg-white hover:bg-slate-100 border border-gray-100 text-gray-400 hover:text-gray-600 font-black rounded-full text-xs transition-colors uppercase tracking-wider"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={loading}
-            className="flex-1 py-3 bg-[#f2bd11] hover:bg-[#d4a50e] disabled:bg-gray-300 text-white font-black rounded-full text-xs transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider border-0"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                <span>Saving item...</span>
-              </>
-            ) : (
-              <span>{itemToEdit ? "Save Changes" : "Create Item"}</span>
-            )}
-          </button>
-        </div>
-
       </div>
     </div>
   );

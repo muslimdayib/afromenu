@@ -56,63 +56,105 @@ export default function AccountSettingsModal({ isOpen, onClose }: AccountSetting
     }
   };
 
+  const labelStyle: React.CSSProperties = {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 11,
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    marginBottom: 6,
+    display: 'block',
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    padding: '14px 16px',
+    color: 'white',
+    fontSize: 15,
+    outline: 'none',
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.85)',
+      backdropFilter: 'blur(12px)',
+      zIndex: 10000,
+      display: 'flex',
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+    }}>
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-[#1b3151]/40 backdrop-blur-sm" onClick={onClose}></div>
+      <div className="absolute inset-0" onClick={onClose}></div>
 
       {/* Modal Container */}
-      <div className="bg-white rounded-[24px] max-w-md w-full p-6 border border-gray-100 relative z-10 shadow-2xl animate-slide-up">
+      <div style={{
+        background: '#13131a',
+        border: '1px solid rgba(218,192,99,0.15)',
+        borderRadius: '24px 24px 0 0',
+        width: '100%',
+        maxWidth: 430,
+        maxHeight: '90vh',
+        overflowY: 'auto',
+        padding: 24,
+        position: 'relative',
+        color: 'white',
+      }} className="relative z-10 shadow-2xl animate-slide-up flex flex-col">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 text-gray-400 hover:text-[#1b3151] transition-colors p-1"
+          style={{ background: 'rgba(255,255,255,0.08)' }}
+          className="absolute right-5 top-5 w-8 h-8 rounded-full hover:bg-white/15 flex items-center justify-center text-white/50 hover:text-white transition-all"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
         {/* Title */}
-        <h3 className="font-heading font-extrabold text-xl text-[#1b3151] mb-6 flex items-center gap-2">
-          <User className="w-5 h-5 text-[#f2bd11]" />
+        <h3 className="font-heading font-extrabold text-xl text-white mb-6 flex items-center gap-2">
+          <User className="w-5 h-5 text-[#dac063]" />
           <span>Account Settings</span>
         </h3>
 
         {/* Success/Error Alerts */}
         {success && (
-          <div className="p-3.5 mb-5 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-100 flex items-center gap-2">
-            <Check className="w-4 h-4 text-emerald-600" />
+          <div className="p-3.5 mb-5 rounded-xl text-emerald-400 text-xs font-semibold flex items-center gap-2" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
+            <Check className="w-4 h-4" />
             <span>{success}</span>
           </div>
         )}
         {error && (
-          <div className="p-3.5 mb-5 rounded-xl bg-rose-50 text-rose-600 text-xs font-semibold border border-rose-100 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-500" />
+          <div className="p-3.5 mb-5 rounded-xl text-rose-400 text-xs font-semibold flex items-center gap-2" style={{ background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)' }}>
+            <AlertCircle className="w-4 h-4" />
             <span>{error}</span>
           </div>
         )}
 
         <div className="flex flex-col gap-6">
-          {/* Section 1: Account Info */}
-          <div className="bg-[#f8f9fa] p-4 rounded-2xl border border-gray-150/60">
-            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2.5">
+          {/* Profile info display */}
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }} className="p-4 rounded-2xl">
+            <h4 style={labelStyle} className="mb-2">
               Profile Information
             </h4>
-            <div className="flex flex-col gap-1.5 text-xs text-[#1b3151]">
+            <div className="flex flex-col gap-1.5 text-xs text-neutral-300">
               <div>
-                <span className="font-bold text-gray-400">Account Name: </span>
+                <span className="text-white/40 font-bold uppercase text-[9px] tracking-wider">Account Name: </span>
                 <span className="font-extrabold">{user?.user_metadata?.name || user?.email?.split("@")[0] || "Partner"}</span>
               </div>
               <div className="mt-0.5">
-                <span className="font-bold text-gray-400">Email Address: </span>
+                <span className="text-white/40 font-bold uppercase text-[9px] tracking-wider">Email Address: </span>
                 <span className="font-mono font-semibold">{user?.email}</span>
               </div>
             </div>
           </div>
 
-          {/* Section 2: Change Password */}
+          {/* Change Password Form */}
           <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4">
-            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5 mb-0.5">
-              <Lock className="w-3.5 h-3.5 text-gray-400" />
+            <h4 style={labelStyle} className="flex items-center gap-1.5 mb-0.5">
+              <Lock className="w-3.5 h-3.5" />
               <span>Change Password</span>
             </h4>
 
@@ -122,26 +164,38 @@ export default function AccountSettingsModal({ isOpen, onClose }: AccountSetting
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Enter new password"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:outline-none text-xs text-[#1b3151] bg-[#f8f9fa] font-bold placeholder:font-normal placeholder:text-gray-400"
+                style={inputStyle}
+                className="placeholder:text-white/20 font-bold focus:border-[#dac063]"
               />
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm new password"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1b3151] focus:outline-none text-xs text-[#1b3151] bg-[#f8f9fa] font-bold placeholder:font-normal placeholder:text-gray-400"
+                style={inputStyle}
+                className="placeholder:text-white/20 font-bold focus:border-[#dac063]"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-[#1b3151] hover:bg-[#15253d] disabled:bg-gray-200 text-white font-bold rounded-[50px] text-xs shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+              style={{
+                width: '100%',
+                padding: '15px',
+                background: '#dac063',
+                border: 'none',
+                borderRadius: 14,
+                color: '#0a0a0b',
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+              className="font-black uppercase tracking-wider text-xs disabled:opacity-40"
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>Updating Password...</span>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto text-neutral-950" />
                 </>
               ) : (
                 <span>Update Password</span>
@@ -149,15 +203,25 @@ export default function AccountSettingsModal({ isOpen, onClose }: AccountSetting
             </button>
           </form>
 
-          <hr className="border-gray-100" />
+          <hr className="border-white/10" />
 
-          {/* Log out option */}
+          {/* Log out button */}
           <button
             onClick={() => {
               signOut();
               onClose();
             }}
-            className="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-[50px] text-xs transition-colors flex items-center justify-center gap-2 border border-red-100 shadow-sm cursor-pointer"
+            style={{
+              width: '100%',
+              padding: '14px',
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: 14,
+              color: '#ef4444',
+              fontSize: 15,
+              cursor: 'pointer',
+            }}
+            className="font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out of Account</span>
