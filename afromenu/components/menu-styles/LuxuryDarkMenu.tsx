@@ -308,7 +308,7 @@ export default function LuxuryDarkMenu({
         {/* MAIN SCROLLABLE CONTAINER */}
         <div
           id="scroll-container"
-          style={isEditing ? { paddingTop: 56 } : undefined}
+          style={isEditing ? { paddingTop: 56, paddingBottom: 80 } : undefined}
           className="flex-1 overflow-y-auto overflow-x-hidden relative flex flex-col custom-scroll pb-24 scrollbar-none"
         >
             
@@ -1018,7 +1018,64 @@ export default function LuxuryDarkMenu({
 
         </div>
 
-        {/* ================== FLOATING INTERACTIONS BAR ================== */}
+        {/* ================== BOTTOM NAV BAR (OWNER ONLY) ================== */}
+        {isEditing && (
+          <nav style={{
+            position: 'fixed',
+            bottom: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '100%',
+            maxWidth: 430,
+            background: 'rgba(10,10,11,0.97)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            borderTop: '1px solid rgba(218,192,99,0.15)',
+            display: 'flex',
+            zIndex: 9998,
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          }}>
+            <a href={`/p/${establishment.slug}`} style={{
+              flex: 1, display: 'flex', flexDirection: 'column' as const,
+              alignItems: 'center', gap: 4, padding: '10px 0',
+              color: '#dac063', fontSize: 10, fontWeight: 700,
+              textDecoration: 'none',
+            }}>
+              <span style={{ fontSize: 18 }}>✏️</span>
+              Edit Menu
+            </a>
+            <a href={`/panel/${establishment.slug}/components`} style={{
+              flex: 1, display: 'flex', flexDirection: 'column' as const,
+              alignItems: 'center', gap: 4, padding: '10px 0',
+              color: 'rgba(255,255,255,0.4)', fontSize: 10,
+              textDecoration: 'none',
+            }}>
+              <span style={{ fontSize: 18 }}>🧩</span>
+              Components
+            </a>
+            <a href={`/panel/${establishment.slug}/qr-code`} style={{
+              flex: 1, display: 'flex', flexDirection: 'column' as const,
+              alignItems: 'center', gap: 4, padding: '10px 0',
+              color: 'rgba(255,255,255,0.4)', fontSize: 10,
+              textDecoration: 'none',
+            }}>
+              <span style={{ fontSize: 18 }}>📱</span>
+              QR Code
+            </a>
+            <button onClick={() => setIsEstModalOpen(true)} style={{
+              flex: 1, display: 'flex', flexDirection: 'column' as const,
+              alignItems: 'center', gap: 4, padding: '10px 0',
+              color: 'rgba(255,255,255,0.4)', fontSize: 10,
+              background: 'none', border: 'none', cursor: 'pointer',
+            }}>
+              <span style={{ fontSize: 18 }}>⋯</span>
+              More
+            </button>
+          </nav>
+        )}
+
+        {/* ================== FLOATING INTERACTIONS BAR (Guest only) ================== */}
+        {!isEditing && (
         <div className="absolute bottom-5 left-1/2 transform -translate-x-1/2 w-[85%] bg-neutral-900/90 backdrop-blur-md rounded-full px-4 py-2 flex justify-between items-center shadow-2xl border border-white/5 z-40">
             <button onClick={() => showToast("Waiter Called", "A server has been requested to your table.")} className="flex items-center space-x-2 text-neutral-300 hover:text-white transition active:scale-95 py-1 px-3 rounded-full hover:bg-white/5 cursor-pointer">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--gold)' }}></span>
@@ -1030,6 +1087,7 @@ export default function LuxuryDarkMenu({
                 <span className="text-xs font-semibold">Request Bill</span>
             </button>
         </div>
+        )}
 
         {/* ================== TOAST NOTIFICATION SYSTEM ================== */}
         {toast && (
