@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Wifi, Phone, MapPin, Star, Utensils, ChevronRight } from "lucide-react";
 
 import AddCategoryModal from "../AddCategoryModal";
 import AddItemModal from "../AddItemModal";
 import EditEstablishmentModal from "../EditEstablishmentModal";
 import AccountSettingsModal from "../AccountSettingsModal";
+import MenuSettingsModal from "../MenuSettingsModal";
 
 interface LuxuryDarkMenuProps {
   establishment: any;
@@ -38,6 +40,8 @@ export default function LuxuryDarkMenu({
   isEditing = false,
   onUpdate,
 }: LuxuryDarkMenuProps) {
+  const router = useRouter();
+
   // Premium Guest View states
   const [guestTab, setGuestTab] = useState<"menu" | "about" | "feedback">("menu");
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -60,6 +64,7 @@ export default function LuxuryDarkMenu({
 
   const [isEstModalOpen, setIsEstModalOpen] = useState(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [showMore, setShowMore] = useState(false);
 
   const showToast = (title: string, desc: string) => {
     setToast({ title, desc });
@@ -1062,7 +1067,7 @@ export default function LuxuryDarkMenu({
               <span style={{ fontSize: 18 }}>📱</span>
               QR Code
             </a>
-            <button onClick={() => setIsEstModalOpen(true)} style={{
+            <button onClick={() => setShowMore(true)} style={{
               flex: 1, display: 'flex', flexDirection: 'column' as const,
               alignItems: 'center', gap: 4, padding: '10px 0',
               color: 'rgba(255,255,255,0.4)', fontSize: 10,
@@ -1246,6 +1251,120 @@ export default function LuxuryDarkMenu({
         )}
 
       </div>
+
+      {/* ================== MORE OPTIONS BOTTOM SHEET ================== */}
+      {showMore && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          zIndex: 10000,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+        }}>
+          <div style={{
+            background: '#13131a',
+            borderRadius: '24px 24px 0 0',
+            padding: 24,
+            border: '1px solid rgba(218,192,99,0.15)',
+            width: '100%',
+            maxWidth: 430,
+          }}>
+            <h3 style={{ color: 'white', margin: '0 0 20px', fontSize: 18, fontWeight: 700 }}>
+              More Options
+            </h3>
+            
+            {/* Menu Settings */}
+            <button onClick={() => { setShowMore(false); setIsEstModalOpen(true); }}
+              style={{
+                width: '100%', padding: '16px',
+                background: 'rgba(218,192,99,0.06)',
+                border: '1px solid rgba(218,192,99,0.15)',
+                borderRadius: 16, color: 'white',
+                display: 'flex', alignItems: 'center', gap: 14,
+                cursor: 'pointer', marginBottom: 10,
+              }}>
+              <span style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: 'rgba(218,192,99,0.1)',
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: 20,
+              }}>🎨</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>Menu Settings</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+                  Branding, style, colors, logo
+                </div>
+              </div>
+              <span style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.3)' }}>›</span>
+            </button>
+
+            {/* Staff Settings */}
+            <button onClick={() => { setShowMore(false); router.push(`/panel/${establishment.slug}/staff-settings`); }}
+              style={{
+                width: '100%', padding: '16px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 16, color: 'white',
+                display: 'flex', alignItems: 'center', gap: 14,
+                cursor: 'pointer', marginBottom: 10,
+              }}>
+              <span style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: 'rgba(255,255,255,0.06)',
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: 20,
+              }}>👥</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>Staff Settings</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+                  Team, stock, hours, account
+                </div>
+              </div>
+              <span style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.3)' }}>›</span>
+            </button>
+
+            {/* View as Customer */}
+            <button onClick={() => { setShowMore(false); window.open(`/p/${establishment.slug}?preview=true`, '_blank'); }}
+              style={{
+                width: '100%', padding: '16px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 16, color: 'white',
+                display: 'flex', alignItems: 'center', gap: 14,
+                cursor: 'pointer',
+              }}>
+              <span style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: 'rgba(255,255,255,0.06)',
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: 20,
+              }}>👁</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>Preview as Customer</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+                  See exactly what customers see
+                </div>
+              </div>
+              <span style={{ marginLeft: 'auto', color: 'rgba(255,255,255,0.3)' }}>›</span>
+            </button>
+
+            {/* Close button */}
+            <button onClick={() => setShowMore(false)}
+              style={{
+                width: '100%', padding: 14, marginTop: 8,
+                background: 'none', border: 'none',
+                color: 'rgba(255,255,255,0.3)',
+                fontSize: 14, cursor: 'pointer',
+              }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* MODALS */}
       {isEditing && (

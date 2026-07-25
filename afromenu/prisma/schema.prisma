@@ -53,10 +53,55 @@ model Establishment {
   reviewStyle    String?    @default("stars") @map("review_style")
   categories     Category[]
   user           User       @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  staffMembers   StaffMember[]
+  operatingHours OperatingHours?
 
   @@index([userId], map: "idx_establishments_user_id")
   @@index([slug], map: "idx_establishments_slug")
   @@map("establishments")
+}
+
+model StaffMember {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  establishmentId String        @map("establishment_id") @db.Uuid
+  userId          String?       @map("user_id") @db.Uuid
+  email           String        @db.VarChar(255)
+  role            String        @default("editor") @db.VarChar(20)
+  invitedAt       DateTime      @default(dbgenerated("timezone('utc'::text, now())")) @map("invited_at") @db.Timestamptz(6)
+  acceptedAt      DateTime?     @map("accepted_at") @db.Timestamptz(6)
+  establishment   Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
+
+  @@index([establishmentId], map: "idx_staff_members_establishment_id")
+  @@map("staff_members")
+}
+
+model OperatingHours {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  establishmentId  String        @unique @map("establishment_id") @db.Uuid
+  mondayOpen       String?       @default("09:00") @map("monday_open") @db.VarChar(10)
+  mondayClose      String?       @default("22:00") @map("monday_close") @db.VarChar(10)
+  mondayEnabled    Boolean       @default(true) @map("monday_enabled")
+  tuesdayOpen      String?       @default("09:00") @map("tuesday_open") @db.VarChar(10)
+  tuesdayClose     String?       @default("22:00") @map("tuesday_close") @db.VarChar(10)
+  tuesdayEnabled   Boolean       @default(true) @map("tuesday_enabled")
+  wednesdayOpen    String?       @default("09:00") @map("wednesday_open") @db.VarChar(10)
+  wednesdayClose   String?       @default("22:00") @map("wednesday_close") @db.VarChar(10)
+  wednesdayEnabled Boolean       @default(true) @map("wednesday_enabled")
+  thursdayOpen      String?      @default("09:00") @map("thursday_open") @db.VarChar(10)
+  thursdayClose     String?      @default("22:00") @map("thursday_close") @db.VarChar(10)
+  thursdayEnabled   Boolean      @default(true) @map("thursday_enabled")
+  fridayOpen       String?       @default("09:00") @map("friday_open") @db.VarChar(10)
+  fridayClose      String?       @default("22:00") @map("friday_close") @db.VarChar(10)
+  fridayEnabled    Boolean       @default(true) @map("friday_enabled")
+  saturdayOpen     String?       @default("09:00") @map("saturday_open") @db.VarChar(10)
+  saturdayClose    String?       @default("22:00") @map("saturday_close") @db.VarChar(10)
+  saturdayEnabled  Boolean       @default(true) @map("saturday_enabled")
+  sundayOpen       String?       @default("09:00") @map("sunday_open") @db.VarChar(10)
+  sundayClose      String?       @default("22:00") @map("sunday_close") @db.VarChar(10)
+  sundayEnabled    Boolean       @default(false) @map("sunday_enabled")
+  establishment    Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
+
+  @@map("operating_hours")
 }
 
 model Category {
