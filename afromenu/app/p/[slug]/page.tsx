@@ -28,20 +28,21 @@ export default function MenuPage() {
 
         // Check if current user is the owner
         try {
-          const authRes = await fetch('/api/auth/me', {
-            credentials: 'include',
-          })
-          if (authRes.ok) {
-            const authData = await authRes.json()
-            if (authData.user && menuData?.establishment?.user_id === authData.user.id) {
+          const ownerRes = await fetch(
+            `/api/establishments/check-owner/${slug}`,
+            { credentials: 'include' }
+          )
+          if (ownerRes.ok) {
+            const data = await ownerRes.json()
+            if (data.isOwner === true) {
               setIsOwner(true)
               // Since they are the owner, load complete data (with hidden categories/items)
-              const ownerRes = await fetch(`/api/establishments/by-slug/${slug}`)
-              if (ownerRes.ok) {
-                const ownerData = await ownerRes.json()
-                setEstablishment(ownerData.establishment)
-                setCategories(ownerData.categories || [])
-                setItems(ownerData.items || [])
+              const fullRes = await fetch(`/api/establishments/by-slug/${slug}`)
+              if (fullRes.ok) {
+                const fullData = await fullRes.json()
+                setEstablishment(fullData.establishment)
+                setCategories(fullData.categories || [])
+                setItems(fullData.items || [])
               }
             }
           }
