@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { QRCodeCanvas } from 'qrcode.react'
 import BottomNav from '@/components/BottomNav'
+import LogoLoadingScreen from '@/components/LogoLoadingScreen'
 
 export default function QRCodePage() {
   const params = useParams()
@@ -31,6 +32,10 @@ export default function QRCodePage() {
     .catch(console.error)
     .finally(() => setLoading(false))
   }, [slug])
+
+  if (loading) {
+    return <LogoLoadingScreen message="Loading QR code..." />
+  }
 
   const downloadQR = () => {
     try {

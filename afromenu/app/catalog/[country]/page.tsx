@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import LogoLoadingScreen from "@/components/LogoLoadingScreen";
 import { supabase } from "@/lib/supabase";
 import { ArrowLeft, Utensils, MapPin, ArrowRight, ExternalLink } from "lucide-react";
 
@@ -68,6 +69,10 @@ export default function CountryCatalogPage() {
       fetchCountryMenus();
     }
   }, [countrySlug]);
+
+  if (loading) {
+    return <LogoLoadingScreen message="Loading catalog menus..." />;
+  }
 
   const countryInfo = COUNTRY_NAMES[countrySlug] || { name: countrySlug, emoji: "🌍" };
   const mockList = MOCK_RESTAURANTS[countrySlug] || [];

@@ -1,339 +1,356 @@
-"use client";
+'use client'
 
-import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import { useAuth } from "@/context/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import { 
-  Utensils, 
-  Plus, 
-  ExternalLink, 
-  LogOut, 
-  Store, 
-  Sparkles,
-  ChevronDown,
-  User,
-  Settings,
-  AlertCircle
-} from "lucide-react";
+import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import LogoLoadingScreen from '@/components/LogoLoadingScreen'
+import { supabase } from '@/lib/supabase'
 
 function DashboardContent() {
-  const { user, session, signOut } = useAuth();
-  const router = useRouter();
-  
-  const [establishments, setEstablishments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter()
+  const [establishments, setEstablishments] = useState<any[]>([])
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const fetchEstablishments = async () => {
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 17) return 'Good afternoon'
+    return 'Good evening'
+  }
+
+  const fetchData = async () => {
     try {
-      setError(null);
-      const res = await fetch('/api/establishments/mine', {
+      // Load user
+      const { data: { user: u } } = await supabase.auth.getUser()
+      setUser(u)
+
+      // Load establishments
+      const res = await fetch('/api/establishments/mine', { 
         credentials: 'include',
-        cache: 'no-store',
-      });
-      
-      console.log('Dashboard fetch status:', res.status);
-      
-      if (res.status === 401) {
-        console.log('Not authenticated - going to login');
-        router.push('/login');
-        return;
+        cache: 'no-store' 
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setEstablishments(data.establishments || [])
+      } else {
+        setEstablishments([])
       }
-      
-      const text = await res.text();
-      console.log('Dashboard response:', text.slice(0, 200));
-      
-      try {
-        const data = JSON.parse(text);
-        setEstablishments(data.establishments || []);
-      } catch {
-        console.error('Parse failed:', text.slice(0, 100));
-        setEstablishments([]);
-      }
-      
-    } catch (err: any) {
-      console.error('Dashboard error:', err.message);
-      setError(err?.message || "Failed to check existing establishments.");
-      setEstablishments([]);
+    } catch (err) {
+      console.error('Dashboard error:', err)
+      setEstablishments([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    fetchEstablishments();
-  }, [router]);
+    fetchData()
+  }, [])
 
-  // Click outside to close avatar dropdown
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
-  const originUrl = typeof window !== "undefined" ? window.location.origin : "afromenu.com";
-  const userInitial = user?.user_metadata?.name?.[0] || user?.email?.[0] || "U";
+  if (loading) {
+    return <LogoLoadingScreen message="Loading your restaurants..." />
+  }
+
+  const userName = user?.user_metadata?.name || 
+                   user?.email?.split('@')[0] || 
+                   'Chef'
 
   return (
-    <div className="min-h-screen bg-bg text-text-main flex flex-col justify-between font-body antialiased">
+    <div style={{
+      minHeight: '100vh',
+      background: '#0a0a0b',
+      color: 'white',
+      fontFamily: "'Plus Jakarta Sans', Inter, sans-serif",
+      position: 'relative',
+    }}>
+      {/* Ambient glow */}
+      <div style={{
+        position: 'fixed', top: 0, right: 0,
+        width: 400, height: 400, pointerEvents: 'none',
+        background: 'radial-gradient(circle, rgba(218,192,99,0.05) 0%, transparent 70%)',
+      }} />
       
-      {/* 1. PREMIUM HEADER NAVBAR */}
-      <header className="bg-[#1b3151] border-b border-white/10 sticky top-0 z-30 transition-all duration-200 shadow-sm">
-        <div className="max-w-6xl w-full mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2 group">
-            <Image
-              src="/logo.png"
-              alt="Afromenu"
-              width={130}
-              height={38}
-              priority
-              className="h-9 w-auto brightness-0 invert"
-            />
-          </Link>
-
-          {/* User profile dropdown on the right */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-2.5 p-1.5 rounded-full hover:bg-white/10 transition-all cursor-pointer border border-transparent hover:border-white/20"
-            >
-              <div className="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center font-extrabold text-sm uppercase shadow-sm select-none">
-                {userInitial}
-              </div>
-              <span className="hidden sm:inline text-xs font-bold text-white pr-1 max-w-[100px] truncate">
-                {user?.user_metadata?.name || user?.email?.split("@")[0]}
-              </span>
-              <ChevronDown className={`w-3.5 h-3.5 text-slate-300 transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`} />
-            </button>
-
-            {/* Dropdown Menu card */}
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-52 bg-surface rounded-2xl border border-border-main shadow-lg py-2.5 z-40 animate-slide-up">
-                <div className="px-4 py-2 border-b border-border-main mb-1.5">
-                  <p className="text-xs font-bold text-text-main truncate">
-                    {user?.user_metadata?.name || "Partner"}
-                  </p>
-                  <p className="text-[10px] text-text-sub font-mono truncate mt-0.5">
-                    {user?.email}
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setDropdownOpen(false);
-                    router.push("/dashboard");
-                  }}
-                  className="w-full px-4 py-2 text-left text-xs font-bold text-text-main hover:bg-surface-2 hover:text-brand flex items-center gap-2.5 transition-colors cursor-pointer border-0 bg-transparent"
-                >
-                  <User className="w-4 h-4 text-text-sub" />
-                  <span>My Profile</span>
-                </button>
-
-                <hr className="border-border-main my-1.5" />
-
-                <button
-                  onClick={() => {
-                    setDropdownOpen(false);
-                    signOut();
-                  }}
-                  className="w-full px-4 py-2 text-left text-xs font-bold text-error hover:bg-red-50 flex items-center gap-2.5 transition-colors cursor-pointer border-0 bg-transparent"
-                >
-                  <LogOut className="w-4 h-4 text-error" />
-                  <span>Sign Out</span>
-                </button>
-              </div>
-            )}
+      {/* Header */}
+      <div style={{
+        background: '#0f0f14',
+        padding: '16px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+      }}>
+        <Image
+          src="/logo.png"
+          alt="Afromenu"
+          width={110}
+          height={32}
+          priority
+          style={{ height: 32, width: 'auto', filter: 'brightness(0) invert(1)' }}
+        />
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+        }}>
+          <div style={{
+            width: 38, height: 38, borderRadius: '50%',
+            background: 'rgba(218,192,99,0.15)',
+            border: '1.5px solid rgba(218,192,99,0.4)',
+            display: 'flex', alignItems: 'center',
+            justifyContent: 'center', color: '#dac063',
+            fontSize: 15, fontWeight: 700,
+          }}>
+            {userName[0]?.toUpperCase()}
           </div>
+          <button
+            onClick={handleSignOut}
+            style={{
+              background: 'none', border: 'none',
+              color: 'rgba(255,255,255,0.4)',
+              fontSize: 12, cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            Sign out
+          </button>
         </div>
-      </header>
+      </div>
 
-      {/* 2. MAIN GRID AND CORE SECTION */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-10">
+      {/* Gold line */}
+      <div style={{
+        height: 1,
+        background: 'linear-gradient(90deg, transparent, rgba(218,192,99,0.4), transparent)',
+      }} />
+
+      <div style={{ padding: '28px 20px', maxWidth: 480, margin: '0 auto' }}>
         
-        {/* Title details */}
-        <div className="mb-10 animate-slide-up">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Sparkles className="w-5 h-5 text-brand fill-brand/10 animate-pulse" />
-            <span className="text-[10px] font-extrabold text-brand tracking-widest uppercase">Partner Hub</span>
-          </div>
-          <h1 className="font-heading font-black text-[28px] text-text-main leading-none">
-            My Restaurants
+        {/* Greeting */}
+        <div style={{ marginBottom: 28 }}>
+          <h1 style={{
+            fontSize: 26, fontWeight: 800, margin: '0 0 6px',
+            letterSpacing: '-0.03em',
+          }}>
+            {getGreeting()}, {userName} 👋
           </h1>
-          <p className="text-xs text-text-sub mt-2 max-w-xl leading-relaxed">
-            Manage your establishments, view live QR code links, and curate premium interactive menu layouts.
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, margin: 0 }}>
+            Your restaurants are performing well
           </p>
         </div>
 
-        {error ? (
-          /* Robust Error boundary display */
-          <div className="bg-white border border-border-main rounded-3xl p-8 max-w-md mx-auto text-center shadow-md animate-slide-up flex flex-col items-center">
-            <AlertCircle className="w-12 h-12 text-error mb-4" />
-            <h3 className="font-heading font-extrabold text-base text-text-main mb-1">
-              Connection Sync Failed
-            </h3>
-            <p className="text-xs text-text-sub mb-6 font-mono bg-surface-2 p-3.5 rounded-xl border border-border-main w-full break-all">
-              {error}
-            </p>
-            <button
-              onClick={() => {
-                setLoading(true);
-                fetchEstablishments();
-              }}
-              className="px-6 py-3 bg-brand hover:bg-brand-secondary text-white font-extrabold text-xs rounded-full shadow-md transition-all hover:scale-[1.01] cursor-pointer border-0"
-            >
-              Retry Connection
-            </button>
-          </div>
-        ) : (
-          /* Grid list (skeleton loader if loading) */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            
-            {loading ? (
-              /* Premium Skeleton grid cards loading instantly */
-              <>
-                {[1, 2, 3].map((s) => (
-                  <div key={s} className="bg-white rounded-3xl border border-border-main overflow-hidden shadow-sm h-[360px] flex flex-col justify-between p-0">
-                    <div className="animate-pulse bg-gray-200 h-40 w-full relative">
-                      <div className="absolute -bottom-6.5 left-5 w-13 h-13 rounded-full border-3 border-white bg-gray-300"></div>
-                    </div>
-                    <div className="p-5 flex-1 flex flex-col gap-3 justify-center mt-3">
-                      <div className="animate-pulse bg-gray-200 rounded-lg h-5 w-3/4"></div>
-                      <div className="animate-pulse bg-gray-200 rounded-lg h-3 w-1/2"></div>
-                      <div className="animate-pulse bg-gray-200 rounded-lg h-3.5 w-1/3 mt-1"></div>
-                    </div>
-                    <div className="p-5 border-t border-border-main bg-slate-50/20">
-                      <div className="animate-pulse bg-gray-200 rounded-full h-11 w-full"></div>
-                    </div>
-                  </div>
-                ))}
-              </>
-            ) : (
-              /* Real dashboard establishments cards */
-              <>
-                {establishments.map((est) => {
-                  const liveUrl = `${originUrl}/p/${est.slug}`;
-                  const estBrand = est.brand_color || "#f2bd11";
-                  const estBrandSecondary = est.brand_color_secondary || "#1b3151";
-
-                  return (
-                    <div 
-                      key={est.id}
-                      className="bg-white rounded-3xl border border-border-main shadow-md hover:shadow-lg transition-all duration-200 flex flex-col justify-between overflow-hidden group hover:-translate-y-1 h-[360px]"
-                    >
-                      {/* Card Top cover */}
-                      <div 
-                        className="h-40 w-full relative flex-shrink-0"
-                        style={{
-                          backgroundImage: est.background_url ? `url(${est.background_url})` : "none",
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                          background: est.background_url ? undefined : `linear-gradient(135deg, ${estBrand} 0%, ${estBrandSecondary} 100%)`
-                        }}
-                      >
-                        <div className="absolute inset-0 bg-black/10"></div>
-                        
-                        {/* Overlapping Logo Circle bottom-left of cover */}
-                        <div className="absolute -bottom-6.5 left-5">
-                          <div className="w-13 h-13 rounded-full border-3 border-white overflow-hidden shadow-sm bg-white flex items-center justify-center select-none">
-                            {est.logo_url ? (
-                              <img 
-                                src={est.logo_url} 
-                                alt={est.name} 
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <Store className="w-5 h-5 text-text-sub" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Card Bottom detail */}
-                      <div className="p-5 pt-8 flex-1 flex flex-col justify-between">
-                        <div>
-                          <div className="flex items-center justify-between gap-2.5">
-                            <h3 className="font-heading font-bold text-lg text-text-main truncate max-w-[180px]">
-                              {est.name}
-                            </h3>
-                            <span className="text-[9px] font-black uppercase text-[#10b981] flex items-center gap-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-ping" />
-                              <span>Active</span>
-                            </span>
-                          </div>
-
-                          <a 
-                            href={liveUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[10px] text-text-sub hover:text-brand font-semibold flex items-center gap-1.5 mt-1.5 transition-colors w-fit break-all font-mono"
-                          >
-                            <span>{liveUrl.replace("http://", "").replace("https://", "")}</span>
-                            <ExternalLink className="w-3 h-3 text-text-sub" />
-                          </a>
-                        </div>
-
-                        {/* Full width custom brand accent button */}
-                        <button
-                          onClick={() => router.push(`/p/${est.slug}`)}
-                          style={{ 
-                            backgroundColor: estBrand,
-                            color: estBrand === "#f2bd11" ? "#1b3151" : "#ffffff",
-                            boxShadow: `0 4px 14px -3px ${estBrand}60`
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = estBrand === "#f2bd11" ? "#d4a50e" : estBrandSecondary;
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = estBrand;
-                          }}
-                          className="w-full h-11 font-extrabold rounded-full text-xs transition-all flex items-center justify-center cursor-pointer border-0 mt-3 hover:scale-[1.01]"
-                        >
-                          Edit Menu
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </>
-            )}
-
-            {/* ADD NEW ESTABLISHMENT CARD */}
-            <button
-              onClick={() => router.push("/onboarding?new=true")}
-              className="bg-white rounded-3xl border-2 border-dashed border-border-main hover:border-brand p-8 flex flex-col items-center justify-center text-center transition-all duration-200 hover:bg-brand/5 hover:shadow-lg min-h-[360px] group cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-full bg-brand/10 text-brand flex items-center justify-center mb-4 group-hover:scale-105 transition-transform duration-200 shadow-xs">
-                <Plus className="w-6 h-6" />
+        {/* Stats Row */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(3,1fr)',
+          gap: 10, marginBottom: 32,
+        }}>
+          {[
+            { label: 'Restaurants', value: establishments.length },
+            { label: 'Menu Items', value: '—' },
+            { label: 'QR Scans', value: 'Soon' },
+          ].map(stat => (
+            <div key={stat.label} style={{
+              background: 'rgba(218,192,99,0.04)',
+              border: '1px solid rgba(218,192,99,0.1)',
+              borderRadius: 14, padding: '14px 12px',
+              textAlign: 'center',
+            }}>
+              <div style={{
+                fontSize: 22, fontWeight: 800,
+                color: '#dac063', marginBottom: 4,
+              }}>
+                {stat.value}
               </div>
-              <h3 className="font-heading font-bold text-base text-text-main mb-1">
-                Add Restaurant
-              </h3>
-              <p className="text-xs text-text-sub max-w-[200px] leading-normal font-medium">
-                Start building your menu details for another branch or brand.
-              </p>
-            </button>
-            
+              <div style={{
+                fontSize: 10, color: 'rgba(255,255,255,0.35)',
+                textTransform: 'uppercase', letterSpacing: '0.06em',
+                fontWeight: 600,
+              }}>
+                {stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Section title */}
+        <div style={{
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', marginBottom: 16,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h2 style={{ fontSize: 17, fontWeight: 700, margin: 0 }}>
+              My Restaurants
+            </h2>
+            <span style={{
+              background: 'rgba(218,192,99,0.15)',
+              border: '1px solid rgba(218,192,99,0.3)',
+              borderRadius: 20, padding: '2px 8px',
+              color: '#dac063', fontSize: 12, fontWeight: 700,
+            }}>
+              {establishments.length}
+            </span>
           </div>
-        )}
+          <button
+            onClick={() => router.push('/onboarding?new=true')}
+            style={{
+              background: '#dac063', border: 'none',
+              borderRadius: 20, padding: '7px 16px',
+              color: '#0a0a0b', fontSize: 13,
+              fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            + Add
+          </button>
+        </div>
 
-      </main>
+        {/* Restaurant Cards */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {establishments.map(est => (
+            <div key={est.id} style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 20, padding: '14px 16px',
+              display: 'flex', alignItems: 'center',
+              gap: 14, position: 'relative', overflow: 'hidden',
+              minHeight: 100,
+            }}>
+              {/* Gold accent strip */}
+              <div style={{
+                position: 'absolute', left: 0, top: 0,
+                bottom: 0, width: 4,
+                background: 'linear-gradient(180deg, #dac063, rgba(218,192,99,0.3))',
+                borderRadius: '20px 0 0 20px',
+              }} />
 
-      {/* Powered Footer */}
-      <footer className="text-center py-6 border-t border-border-main text-xs text-text-sub font-semibold">
-        &copy; {new Date().getFullYear()} Afromenu SaaS. All rights reserved.
-      </footer>
+              {/* Logo */}
+              <div style={{
+                width: 56, height: 56, borderRadius: 16,
+                background: est.logo_url 
+                  ? 'transparent' 
+                  : `rgba(218,192,99,0.1)`,
+                border: '1.5px solid rgba(218,192,99,0.3)',
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center', flexShrink: 0,
+                marginLeft: 8, overflow: 'hidden',
+              }}>
+                {est.logo_url ? (
+                  <img src={est.logo_url} alt={est.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ color: '#dac063', fontSize: 22, fontWeight: 700 }}>
+                    {est.name?.[0]?.toUpperCase()}
+                  </span>
+                )}
+              </div>
+
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontSize: 16, fontWeight: 700, color: 'white',
+                  marginBottom: 4, whiteSpace: 'nowrap',
+                  overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>
+                  {est.name}
+                </div>
+                <div style={{
+                  fontSize: 11, color: 'rgba(255,255,255,0.4)',
+                  marginBottom: 6, fontFamily: 'monospace',
+                }}>
+                  afromenu.com/p/{est.slug}
+                </div>
+                <span style={{
+                  background: 'rgba(16,185,129,0.15)',
+                  border: '1px solid rgba(16,185,129,0.3)',
+                  borderRadius: 20, padding: '2px 8px',
+                  color: '#10b981', fontSize: 10, fontWeight: 600,
+                  display: 'inline-block',
+                }}>
+                  ● Live
+                </span>
+              </div>
+
+              {/* Actions */}
+              <div style={{
+                display: 'flex', flexDirection: 'column',
+                gap: 6, flexShrink: 0,
+              }}>
+                <button
+                  onClick={() => router.push(`/p/${est.slug}`)}
+                  style={{
+                    background: '#dac063', border: 'none',
+                    borderRadius: 10, padding: '8px 14px',
+                    color: '#0a0a0b', fontSize: 12,
+                    fontWeight: 700, cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Edit Menu →
+                </button>
+                <button
+                  onClick={() => router.push(`/panel/${est.slug}/qr-code`)}
+                  style={{
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 10, padding: '6px 14px',
+                    color: 'rgba(255,255,255,0.6)',
+                    fontSize: 11, cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  QR Code
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {/* Add New Card */}
+          <button
+            onClick={() => router.push('/onboarding?new=true')}
+            style={{
+              width: '100%', height: 80,
+              background: 'transparent',
+              border: '1.5px dashed rgba(218,192,99,0.2)',
+              borderRadius: 20, cursor: 'pointer',
+              display: 'flex', alignItems: 'center',
+              justifyContent: 'center', gap: 12,
+              color: '#dac063',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = '#dac063'
+              e.currentTarget.style.background = 'rgba(218,192,99,0.04)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'rgba(218,192,99,0.2)'
+              e.currentTarget.style.background = 'transparent'
+            }}
+          >
+            <div style={{
+              width: 32, height: 32, borderRadius: '50%',
+              border: '1.5px solid currentColor',
+              display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: 18,
+              fontWeight: 700,
+            }}>+</div>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>
+              Add New Restaurant
+            </span>
+          </button>
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          textAlign: 'center', marginTop: 40,
+          color: 'rgba(255,255,255,0.15)', fontSize: 12,
+        }}>
+          Powered by Afromenu ✦
+        </div>
+      </div>
     </div>
-  );
+  )
 }
 
 export default function DashboardPage() {
@@ -341,5 +358,5 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <DashboardContent />
     </ProtectedRoute>
-  );
+  )
 }

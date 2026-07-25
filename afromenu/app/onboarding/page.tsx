@@ -7,6 +7,7 @@ import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import LogoLoadingScreen from "@/components/LogoLoadingScreen";
 import { Utensils, Globe, Coins, BadgeAlert, ArrowRight, HelpCircle, Palette, Sparkles, Rocket } from "lucide-react";
 
 // Currencies mapping to symbols
@@ -131,6 +132,10 @@ function OnboardingContent() {
 
 
   const originUrl = typeof window !== "undefined" ? window.location.origin : "afromenu.com";
+
+  if (loading) {
+    return <LogoLoadingScreen message="Setting up your account..." />;
+  }
 
   return (
     <div className="min-h-screen bg-[#fafbfe] flex flex-col justify-between py-12 px-6">

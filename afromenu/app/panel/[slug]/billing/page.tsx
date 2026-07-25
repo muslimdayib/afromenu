@@ -7,6 +7,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import BottomNav from "@/components/BottomNav";
 import EditEstablishmentModal from "@/components/EditEstablishmentModal";
 import AccountSettingsModal from "@/components/AccountSettingsModal";
+import LogoLoadingScreen from "@/components/LogoLoadingScreen";
 import { CreditCard, Calendar, ShieldCheck, ArrowRight, ArrowLeft, History, Coins, Loader2 } from "lucide-react";
 
 function BillingContent() {
@@ -48,17 +49,7 @@ function BillingContent() {
   }, [slug]);
 
   if (loading || !establishment) {
-    return (
-      <div className="min-h-screen bg-[#f8f9fa] flex flex-col items-center justify-center">
-        <div className="relative w-12 h-12 mb-4">
-          <div className="absolute inset-0 rounded-full border-4 border-[#1b3151]/20"></div>
-          <div className="absolute inset-0 rounded-full border-4 border-t-[#f2bd11] animate-spin"></div>
-        </div>
-        <p className="font-heading font-semibold text-sm text-[#1b3151]">
-          Loading billing records...
-        </p>
-      </div>
-    );
+    return <LogoLoadingScreen message="Loading billing records..." />;
   }
 
   // Format paid until date

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import MenuRenderer from '@/components/MenuRenderer'
+import LogoLoadingScreen from '@/components/LogoLoadingScreen'
 
 export default function MenuPage() {
   const { slug } = useParams()
@@ -60,30 +61,7 @@ export default function MenuPage() {
   }, [slug])
 
   if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: '#0a0a0b',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-        gap: 16,
-      }}>
-        <div style={{
-          width: 44,
-          height: 44,
-          border: '2px solid rgba(218,192,99,0.2)',
-          borderTop: '2px solid #dac063',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-        }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-        <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
-          Loading menu...
-        </p>
-      </div>
-    )
+    return <LogoLoadingScreen message="Loading menu..." />
   }
 
   if (!establishment) {
